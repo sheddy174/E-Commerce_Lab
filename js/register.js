@@ -12,12 +12,12 @@ $(document).ready(function() {
         const originalText = submitBtn.text();
         submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Registering...');
         
-        // Get form data - FIXED: Using correct names that match database columns
+        // Get form data 
         const formData = {
             customer_name: $('#full_name').val().trim(),      
             customer_email: $('#email').val().trim(),           
             customer_pass: $('#password').val(),
-            customer_country: $('#country').val().trim(),       
+            customer_country: $('#country').val().trim(),                              
             customer_city: $('#city').val().trim(),            
             customer_contact: $('#contact_number').val().trim() 
         };
@@ -87,12 +87,12 @@ $(document).ready(function() {
 function validateForm(data) {
     // Check for empty fields
     const fieldLabels = {
-        customer_name: 'Full Name',
-        customer_email: 'Email',
-        customer_pass: 'Password',
-        customer_country: 'Country',
-        customer_city: 'City',
-        customer_contact: 'Contact Number'
+        customer_name: 'full_name',
+        customer_email: 'email',
+        customer_pass: 'password',
+        customer_country: 'country',
+        customer_city: 'city',
+        customer_contact: 'contact_number'
     };
     
     for (const [key, value] of Object.entries(data)) {
