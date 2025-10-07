@@ -14,12 +14,12 @@ $(document).ready(function() {
         
         // Get form data - FIXED: Using correct names that match database columns
         const formData = {
-            customer_name: $('#full_name').val().trim(),        // Changed from full_name
-            customer_email: $('#email').val().trim(),           // Changed from email
-            customer_pass: $('#password').val(),                // Changed from password
-            customer_country: $('#country').val().trim(),       // Changed from country
-            customer_city: $('#city').val().trim(),            // Changed from city
-            customer_contact: $('#contact_number').val().trim() // Changed from contact_number
+            customer_name: $('#full_name').val().trim(),      
+            customer_email: $('#email').val().trim(),           
+            customer_pass: $('#password').val(),
+            customer_country: $('#country').val().trim(),       
+            customer_city: $('#city').val().trim(),            
+            customer_contact: $('#contact_number').val().trim() 
         };
         
         // Client-side validation
