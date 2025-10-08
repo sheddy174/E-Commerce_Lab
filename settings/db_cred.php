@@ -17,15 +17,15 @@ if (!defined("SERVER")) {
 }
 
 if (!defined("USERNAME")) {
-    define("USERNAME", "root");
+    define("USERNAME", "shadrack.berdah");
 }
 
 if (!defined("PASSWD")) {
-    define("PASSWD", '');
+    define("PASSWD", '$h@dr@ck123');
 }
 
 if (!defined("DATABASE")) {
     // Use the database name from the provided SQL dump
-    define("DATABASE", "shoppn");  //ecommerce_2025A_shadrack_berdah
+    define("DATABASE", "ecommerce_2025A_shadrack_berdah");  //ecommerce_2025A_shadrack_berdah
 }
 ?>
