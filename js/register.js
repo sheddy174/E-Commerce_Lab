@@ -82,7 +82,6 @@ $(document).ready(function() {
 
 /**
  * Validate form data on client side
- * FIXED: Updated to work with new field names
  */
 function validateForm(data) {
     // Check for empty fields
