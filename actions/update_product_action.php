@@ -77,14 +77,11 @@ if (!$validation['valid']) {
 $image_path = null; // null means keep existing image
 
 if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
-    // Get file information
     $file = $_FILES['product_image'];
     $file_ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     
-    // Allowed file extensions
     $allowed_extensions = array('jpg', 'jpeg', 'png', 'gif', 'webp');
     
-    // Validate file extension
     if (!in_array($file_ext, $allowed_extensions)) {
         $response['status'] = 'error';
         $response['message'] = 'Invalid file type. Allowed: ' . implode(', ', $allowed_extensions);
@@ -92,7 +89,6 @@ if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPL
         exit();
     }
     
-    // Validate file size (5MB max)
     $max_file_size = 5 * 1024 * 1024;
     if ($file['size'] > $max_file_size) {
         $response['status'] = 'error';
@@ -104,14 +100,30 @@ if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPL
     // Upload new image
     $user_id = get_user_id();
     
-    // Use absolute path from document root
-    $upload_base = __DIR__ . '/../uploads/';
+    // CRITICAL FIX: uploads folder is at WEB ROOT, project is in subfolder
+    $upload_base = dirname(dirname(__DIR__)) . '/uploads/';
+    
+    if (!is_dir($upload_base)) {
+        $response['status'] = 'error';
+        $response['message'] = 'Upload directory not found';
+        error_log("ERROR: uploads folder not found at: " . $upload_base);
+        echo json_encode($response);
+        exit();
+    }
+    
+    if (!is_writable($upload_base)) {
+        $response['status'] = 'error';
+        $response['message'] = 'Upload directory not writable';
+        error_log("ERROR: uploads folder not writable: " . $upload_base);
+        echo json_encode($response);
+        exit();
+    }
+    
     $user_folder = 'u' . $user_id . '/';
     $product_folder = 'p' . $product_id . '/';
     $full_path = $upload_base . $user_folder . $product_folder;
     
-    // Create directories if they don't exist
-    if (!file_exists($full_path)) {
+    if (!is_dir($full_path)) {
         if (!mkdir($full_path, 0755, true)) {
             $response['status'] = 'error';
             $response['message'] = 'Failed to create upload directory';
@@ -122,38 +134,34 @@ if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPL
         chmod($full_path, 0755);
     }
     
-    // Generate unique filename
     $unique_filename = 'img_' . time() . '_' . uniqid() . '.' . $file_ext;
     $destination = $full_path . $unique_filename;
     
-    // Move uploaded file
     if (move_uploaded_file($file['tmp_name'], $destination)) {
-        // Set file permissions
         chmod($destination, 0644);
         
         // Delete old image if exists
         if (!empty($existing_product['product_image'])) {
-            $old_image = __DIR__ . '/../' . $existing_product['product_image'];
-            if (file_exists($old_image)) {
+            $old_image = dirname(dirname(__DIR__)) . '/' . $existing_product['product_image'];
+            if (file_exists($old_image) && is_file($old_image)) {
                 unlink($old_image);
                 error_log("Deleted old image: " . $old_image);
             }
         }
         
-        // Set new image path (relative for database)
+        // Set new image path (relative)
         $image_path = 'uploads/' . $user_folder . $product_folder . $unique_filename;
         error_log("New image uploaded: " . $image_path);
     } else {
         $response['status'] = 'error';
-        $response['message'] = 'Failed to upload new image';
-        error_log("Failed to move uploaded file to: " . $destination);
-        error_log("Upload error code: " . $file['error']);
+        $response['message'] = 'Failed to upload image';
+        error_log("Failed to move file to: " . $destination);
         echo json_encode($response);
         exit();
     }
 }
 
-// Attempt to update product through controller
+// Update product
 try {
     $success = update_product_ctr(
         $product_id,
@@ -171,18 +179,17 @@ try {
         $response['message'] = 'Product "' . htmlspecialchars($product_data['product_title']) . '" updated successfully';
         $response['product_id'] = $product_id;
         
-        error_log("Product updated successfully - ID: " . $product_id . ", Title: " . $product_data['product_title'] . ", User: " . get_user_email());
+        error_log("Product updated - ID: " . $product_id);
     } else {
         $response['status'] = 'error';
-        $response['message'] = 'Failed to update product. Please try again.';
-        
-        error_log("Failed to update product - ID: " . $product_id . ", User: " . get_user_email());
+        $response['message'] = 'Failed to update product';
+        error_log("Failed to update product - ID: " . $product_id);
     }
     
 } catch (Exception $e) {
     error_log("Update product exception: " . $e->getMessage());
     $response['status'] = 'error';
-    $response['message'] = 'System error occurred while updating product';
+    $response['message'] = 'System error occurred';
 }
 
 echo json_encode($response);

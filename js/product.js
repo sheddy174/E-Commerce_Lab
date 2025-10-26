@@ -1,6 +1,7 @@
 /**
  * Product Management JavaScript
  * Handles CRUD operations for products via AJAX with image uploads
+ * FIXED: Image paths for shared server with uploads/ at web root
  */
 
 $(document).ready(function() {
@@ -141,7 +142,13 @@ $(document).ready(function() {
         }
         
         products.forEach(function(product) {
-            const imageUrl = product.product_image ? '../' + product.product_image : 'https://placehold.co/200x200/E3F2FD/2E86AB?text=No+Image';
+            // FIXED: Image path construction for shared server
+            // Database stores: uploads/u40/p6/image.png
+            // From admin/product.php, we need to go up to web root: ../../uploads/...
+            const imageUrl = product.product_image 
+                ? '../../' + product.product_image 
+                : 'https://placehold.co/200x200/E3F2FD/2E86AB?text=No+Image';
+            
             const price = parseFloat(product.product_price).toFixed(2);
             
             const row = `
@@ -403,10 +410,21 @@ $(document).ready(function() {
                     $('#addImagePreview').hide();
                     $('#addFileName').text('No file chosen');
                     showAlert('success', response.message);
+                    
+                    // Show debug info if image upload failed but product was added
+                    if (response.debug) {
+                        console.warn('Image upload debug info:', response.debug);
+                    }
+                    
                     loadProducts();
                 } else {
                     console.error('Product add failed:', response.message);
                     showAlert('error', response.message);
+                    
+                    // Show debug info if available
+                    if (response.debug) {
+                        console.error('Debug info:', response.debug);
+                    }
                 }
             },
             error: function(xhr, status, error) {
@@ -470,7 +488,11 @@ $(document).ready(function() {
         $('#editProductDesc').val(product.product_desc);
         $('#editProductKeywords').val(product.product_keywords);
         
-        const imageUrl = product.product_image ? '../' + product.product_image : '../assets/images/no-image.png';
+        // FIXED: Image path for display in edit modal
+        const imageUrl = product.product_image 
+            ? '../../' + product.product_image 
+            : 'https://placehold.co/200x200/E3F2FD/2E86AB?text=No+Image';
+        
         $('#editCurrentImage').attr('src', imageUrl);
         $('#editImagePreview').hide();
         $('#editFileName').text('No file chosen');

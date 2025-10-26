@@ -3,6 +3,7 @@
  * Upload Product Image Action Handler
  * Handles product image uploads with organized folder structure
  * Structure: uploads/u{user_id}/p{product_id}/image_name.ext
+ * Corrected for shared server with uploads/ at web root
  */
 
 header('Content-Type: application/json');
@@ -56,7 +57,6 @@ $file = $_FILES['product_image'];
 $file_name = $file['name'];
 $file_tmp = $file['tmp_name'];
 $file_size = $file['size'];
-$file_error = $file['error'];
 
 // Get file extension
 $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
@@ -90,8 +90,9 @@ if ($product_id === 0) {
     $product_id = 'temp_' . time();
 }
 
-// Create directory structure: uploads/u{user_id}/p{product_id}/
-$upload_base = __DIR__ . '/../uploads/';
+// CRITICAL FIX: uploads/ is at web root, project is in E-Commerce_Lab/
+// From actions/ folder, go UP to E-Commerce_Lab/, then UP to web root, then into uploads/
+$upload_base = dirname(dirname(__DIR__)) . '/uploads/';
 $user_folder = 'u' . $user_id . '/';
 $product_folder = 'p' . $product_id . '/';
 $full_path = $upload_base . $user_folder . $product_folder;
@@ -134,7 +135,10 @@ $destination = $full_path . $unique_filename;
 
 // Move uploaded file
 if (move_uploaded_file($file_tmp, $destination)) {
-    // Store relative path (without leading ../)
+    // Set file permissions
+    chmod($destination, 0644);
+    
+    // Store relative path (for database and web access)
     $relative_path = 'uploads/' . $user_folder . $product_folder . $unique_filename;
     
     $response['status'] = 'success';
