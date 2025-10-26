@@ -141,7 +141,7 @@ $(document).ready(function() {
         }
         
         products.forEach(function(product) {
-            const imageUrl = product.product_image ? '../' + product.product_image : '../assets/images/no-image.png';
+            const imageUrl = product.product_image ? '../' + product.product_image : 'https://placehold.co/200x200/E3F2FD/2E86AB?text=No+Image';
             const price = parseFloat(product.product_price).toFixed(2);
             
             const row = `
@@ -149,7 +149,7 @@ $(document).ready(function() {
                     <td>${product.product_id}</td>
                     <td>
                         <img src="${imageUrl}" class="product-image-preview" alt="${escapeHtml(product.product_title)}" 
-                             onerror="this.src='../assets/images/no-image.png'">
+                             onerror="this.src='https://placehold.co/200x200/E3F2FD/2E86AB?text=No+Image'">
                     </td>
                     <td>
                         <strong>${escapeHtml(product.product_title)}</strong><br>
@@ -290,6 +290,34 @@ $(document).ready(function() {
         };
     }
     
+    /**
+     * Validate image file before upload
+     */
+    function validateImageFile(file) {
+        const errors = [];
+        
+        if (!file) {
+            return { isValid: true, errors: [] }; // No file is okay
+        }
+        
+        // Check file size (5MB max)
+        const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+        if (file.size > maxSize) {
+            errors.push('Image file is too large. Maximum size is 5MB');
+        }
+        
+        // Check file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedTypes.includes(file.type.toLowerCase())) {
+            errors.push('Invalid file type. Allowed: JPG, PNG, GIF, WEBP');
+        }
+        
+        return {
+            isValid: errors.length === 0,
+            errors: errors
+        };
+    }
+    
     // Image preview handlers
     $('#addProductImage').change(function() {
         previewImage(this, '#addImagePreview', '#addFileName');
@@ -322,6 +350,16 @@ $(document).ready(function() {
         
         const formData = new FormData(this);
         
+        // Debug: Log form data
+        console.log('Submitting product with data:');
+        for (let pair of formData.entries()) {
+            if (pair[0] === 'product_image') {
+                console.log(pair[0] + ': ' + (pair[1].name || 'No file'));
+            } else {
+                console.log(pair[0] + ': ' + pair[1]);
+            }
+        }
+        
         // Client-side validation
         const validation = validateProduct({
             product_title: formData.get('product_title'),
@@ -335,6 +373,14 @@ $(document).ready(function() {
             return;
         }
         
+        // Check if image file is selected
+        const imageFile = $('#addProductImage')[0].files[0];
+        if (imageFile) {
+            console.log('Image file selected:', imageFile.name, 'Size:', imageFile.size, 'Type:', imageFile.type);
+        } else {
+            console.log('No image file selected');
+        }
+        
         const submitBtn = $(this).find('button[type="submit"]');
         const originalText = submitBtn.html();
         submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Adding...');
@@ -343,10 +389,12 @@ $(document).ready(function() {
             url: '../actions/add_product_action.php',
             type: 'POST',
             data: formData,
-            processData: false,
-            contentType: false,
+            processData: false,  // Important for FormData
+            contentType: false,  // Important for FormData
+            cache: false,        // Don't cache the request
             dataType: 'json',
             success: function(response) {
+                console.log('Server response:', response);
                 submitBtn.prop('disabled', false).html(originalText);
                 
                 if (response.status === 'success') {
@@ -357,13 +405,37 @@ $(document).ready(function() {
                     showAlert('success', response.message);
                     loadProducts();
                 } else {
+                    console.error('Product add failed:', response.message);
                     showAlert('error', response.message);
                 }
             },
             error: function(xhr, status, error) {
+                console.error('AJAX Error:', {
+                    status: status,
+                    error: error,
+                    responseText: xhr.responseText,
+                    statusCode: xhr.status
+                });
+                
                 submitBtn.prop('disabled', false).html(originalText);
-                console.error('AJAX Error:', error);
-                showAlert('error', 'Error adding product. Please try again.');
+                
+                // Try to parse error response
+                let errorMessage = 'Error adding product. Please try again.';
+                try {
+                    const errorResponse = JSON.parse(xhr.responseText);
+                    if (errorResponse.message) {
+                        errorMessage = errorResponse.message;
+                    }
+                } catch (e) {
+                    // If response is not JSON, use status text
+                    if (xhr.status === 413) {
+                        errorMessage = 'File too large. Maximum size is 5MB.';
+                    } else if (xhr.status === 500) {
+                        errorMessage = 'Server error. Check your error logs for details.';
+                    }
+                }
+                
+                showAlert('error', errorMessage);
             }
         });
     });
@@ -410,6 +482,16 @@ $(document).ready(function() {
         
         const formData = new FormData(this);
         
+        // Debug: Log form data
+        console.log('Updating product with data:');
+        for (let pair of formData.entries()) {
+            if (pair[0] === 'product_image') {
+                console.log(pair[0] + ': ' + (pair[1].name || 'No file'));
+            } else {
+                console.log(pair[0] + ': ' + pair[1]);
+            }
+        }
+        
         const validation = validateProduct({
             product_title: formData.get('product_title'),
             product_cat: formData.get('product_cat'),
@@ -422,6 +504,14 @@ $(document).ready(function() {
             return;
         }
         
+        // Check if new image file is selected
+        const imageFile = $('#editProductImage')[0].files[0];
+        if (imageFile) {
+            console.log('New image file selected:', imageFile.name, 'Size:', imageFile.size, 'Type:', imageFile.type);
+        } else {
+            console.log('No new image file selected (keeping existing image)');
+        }
+        
         const submitBtn = $(this).find('button[type="submit"]');
         const originalText = submitBtn.html();
         submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Updating...');
@@ -432,8 +522,10 @@ $(document).ready(function() {
             data: formData,
             processData: false,
             contentType: false,
+            cache: false,
             dataType: 'json',
             success: function(response) {
+                console.log('Update response:', response);
                 submitBtn.prop('disabled', false).html(originalText);
                 
                 if (response.status === 'success') {
@@ -441,13 +533,36 @@ $(document).ready(function() {
                     showAlert('success', response.message);
                     loadProducts();
                 } else {
+                    console.error('Product update failed:', response.message);
                     showAlert('error', response.message);
                 }
             },
             error: function(xhr, status, error) {
+                console.error('AJAX Error:', {
+                    status: status,
+                    error: error,
+                    responseText: xhr.responseText,
+                    statusCode: xhr.status
+                });
+                
                 submitBtn.prop('disabled', false).html(originalText);
-                console.error('AJAX Error:', error);
-                showAlert('error', 'Error updating product. Please try again.');
+                
+                // Try to parse error response
+                let errorMessage = 'Error updating product. Please try again.';
+                try {
+                    const errorResponse = JSON.parse(xhr.responseText);
+                    if (errorResponse.message) {
+                        errorMessage = errorResponse.message;
+                    }
+                } catch (e) {
+                    if (xhr.status === 413) {
+                        errorMessage = 'File too large. Maximum size is 5MB.';
+                    } else if (xhr.status === 500) {
+                        errorMessage = 'Server error. Check your error logs for details.';
+                    }
+                }
+                
+                showAlert('error', errorMessage);
             }
         });
     });

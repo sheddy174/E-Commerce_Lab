@@ -91,38 +91,45 @@ if ($product_id === 0) {
 }
 
 // Create directory structure: uploads/u{user_id}/p{product_id}/
-$upload_base = '../uploads/';
+$upload_base = __DIR__ . '/../uploads/';
 $user_folder = 'u' . $user_id . '/';
 $product_folder = 'p' . $product_id . '/';
 $full_path = $upload_base . $user_folder . $product_folder;
 
-// Verify upload path is within uploads/ directory (security check)
-$real_base = realpath($upload_base);
-$real_path = realpath($full_path);
+// Verify upload base exists
+if (!file_exists($upload_base)) {
+    $response['status'] = 'error';
+    $response['message'] = 'Upload directory does not exist. Please contact administrator.';
+    error_log("Upload base directory missing: " . $upload_base);
+    echo json_encode($response);
+    exit();
+}
 
 // Create directories if they don't exist
 if (!file_exists($full_path)) {
-    if (!mkdir($full_path, 0755, true)) {
+    if (!mkdir($full_path, 0777, true)) {
         $response['status'] = 'error';
         $response['message'] = 'Failed to create upload directory';
         error_log("Failed to create directory: " . $full_path);
+        error_log("Parent writable: " . (is_writable(dirname($full_path)) ? 'yes' : 'no'));
         echo json_encode($response);
         exit();
     }
+    // Set directory permissions explicitly
+    chmod($full_path, 0777);
 }
 
-// Verify the resolved path is still within uploads/ (security check)
-$real_path = realpath($full_path);
-if ($real_path === false || strpos($real_path, $real_base) !== 0) {
+// Verify directory is writable
+if (!is_writable($full_path)) {
     $response['status'] = 'error';
-    $response['message'] = 'Invalid upload path';
-    error_log("Security: Attempted upload outside uploads/ directory");
+    $response['message'] = 'Upload directory is not writable';
+    error_log("Directory not writable: " . $full_path);
     echo json_encode($response);
     exit();
 }
 
 // Generate unique filename to prevent overwrites
-$unique_filename = uniqid('img_', true) . '.' . $file_ext;
+$unique_filename = 'img_' . time() . '_' . uniqid() . '.' . $file_ext;
 $destination = $full_path . $unique_filename;
 
 // Move uploaded file

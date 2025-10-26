@@ -103,35 +103,51 @@ if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPL
     
     // Upload new image
     $user_id = get_user_id();
-    $upload_base = '../uploads/';
+    
+    // Use absolute path from document root
+    $upload_base = __DIR__ . '/../uploads/';
     $user_folder = 'u' . $user_id . '/';
     $product_folder = 'p' . $product_id . '/';
     $full_path = $upload_base . $user_folder . $product_folder;
     
     // Create directories if they don't exist
     if (!file_exists($full_path)) {
-        mkdir($full_path, 0755, true);
+        if (!mkdir($full_path, 0777, true)) {
+            $response['status'] = 'error';
+            $response['message'] = 'Failed to create upload directory';
+            error_log("Failed to create directory: " . $full_path);
+            echo json_encode($response);
+            exit();
+        }
+        chmod($full_path, 0777);
     }
     
     // Generate unique filename
-    $unique_filename = uniqid('img_', true) . '.' . $file_ext;
+    $unique_filename = 'img_' . time() . '_' . uniqid() . '.' . $file_ext;
     $destination = $full_path . $unique_filename;
     
     // Move uploaded file
     if (move_uploaded_file($file['tmp_name'], $destination)) {
+        // Set file permissions
+        chmod($destination, 0644);
+        
         // Delete old image if exists
         if (!empty($existing_product['product_image'])) {
-            $old_image = '../' . $existing_product['product_image'];
+            $old_image = __DIR__ . '/../' . $existing_product['product_image'];
             if (file_exists($old_image)) {
                 unlink($old_image);
+                error_log("Deleted old image: " . $old_image);
             }
         }
         
-        // Set new image path
+        // Set new image path (relative for database)
         $image_path = 'uploads/' . $user_folder . $product_folder . $unique_filename;
+        error_log("New image uploaded: " . $image_path);
     } else {
         $response['status'] = 'error';
         $response['message'] = 'Failed to upload new image';
+        error_log("Failed to move uploaded file to: " . $destination);
+        error_log("Upload error code: " . $file['error']);
         echo json_encode($response);
         exit();
     }

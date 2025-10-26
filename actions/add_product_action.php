@@ -81,53 +81,60 @@ if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPL
         echo json_encode($response);
         exit();
     }
-    
-    // First, add product to get product_id, then upload image
-    // We'll do a two-step process: add product without image, then update with image
-    
-} else {
-    // No image uploaded, use default or null
-    $image_path = null; // or set a default image path
 }
 
-// Attempt to add product through controller
+// Attempt to add product through controller (without image first)
 try {
-    // Add product first (with or without image)
     $product_id = add_product_ctr(
         $product_data['product_cat'],
         $product_data['product_brand'],
         $product_data['product_title'],
         $product_data['product_price'],
         $product_data['product_desc'],
-        $image_path,
+        null, // Image will be added after
         $product_data['product_keywords']
     );
     
     if ($product_id) {
-        // If image was uploaded, now handle the upload with the product_id
+        // Now handle image upload with the product_id
         if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
             $user_id = get_user_id();
-            $upload_base = '../uploads/';
+            
+            // Use absolute path from document root
+            $upload_base = __DIR__ . '/../uploads/';
             $user_folder = 'u' . $user_id . '/';
             $product_folder = 'p' . $product_id . '/';
             $full_path = $upload_base . $user_folder . $product_folder;
             
-            // Create directories
+            // Create directories if they don't exist
             if (!file_exists($full_path)) {
-                mkdir($full_path, 0755, true);
+                if (!mkdir($full_path, 0777, true)) {
+                    error_log("Failed to create directory: " . $full_path);
+                    // Product added but image failed - still return success
+                    $response['status'] = 'success';
+                    $response['message'] = 'Product added but image upload failed';
+                    $response['product_id'] = $product_id;
+                    echo json_encode($response);
+                    exit();
+                }
+                // Set directory permissions
+                chmod($full_path, 0777);
             }
             
             // Generate unique filename
             $file_ext = strtolower(pathinfo($_FILES['product_image']['name'], PATHINFO_EXTENSION));
-            $unique_filename = uniqid('img_', true) . '.' . $file_ext;
+            $unique_filename = 'img_' . time() . '_' . uniqid() . '.' . $file_ext;
             $destination = $full_path . $unique_filename;
             
             // Move uploaded file
             if (move_uploaded_file($_FILES['product_image']['tmp_name'], $destination)) {
-                // Update product with image path
+                // Set file permissions
+                chmod($destination, 0644);
+                
+                // Store relative path (for database and display)
                 $image_path = 'uploads/' . $user_folder . $product_folder . $unique_filename;
                 
-                // Update product with image
+                // Update product with image path
                 update_product_ctr(
                     $product_id,
                     $product_data['product_cat'],
@@ -138,12 +145,20 @@ try {
                     $image_path,
                     $product_data['product_keywords']
                 );
+                
+                error_log("Image uploaded successfully: " . $image_path);
+            } else {
+                error_log("Failed to move uploaded file to: " . $destination);
+                error_log("Upload error code: " . $_FILES['product_image']['error']);
             }
         }
         
         $response['status'] = 'success';
         $response['message'] = 'Product "' . htmlspecialchars($product_data['product_title']) . '" added successfully';
         $response['product_id'] = $product_id;
+        if (isset($image_path)) {
+            $response['image_path'] = $image_path;
+        }
         
         error_log("Product added successfully - ID: " . $product_id . ", Title: " . $product_data['product_title'] . ", User: " . get_user_email());
     } else {
