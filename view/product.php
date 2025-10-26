@@ -59,7 +59,7 @@ if ($products === false) {
         
         .product-image-container {
             position: relative;
-            padding-top: 75%; /* 4:3 Aspect Ratio */
+            padding-top: 75%; 
             overflow: hidden;
             background: #f8f9fa;
         }
