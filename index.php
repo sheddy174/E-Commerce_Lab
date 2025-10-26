@@ -184,9 +184,6 @@ if (isset($_GET['login'])) {
 
             <?php if (is_admin()): ?>
                 <!-- Admin menu -->
-                <a href="actions/logout_action.php" class="btn btn-sm btn-outline-danger">
-                    <i class="fas fa-sign-out-alt me-1"></i>Logout
-                </a>
                 <a href="admin/category.php" class="btn btn-sm btn-outline-success">
                     <i class="fas fa-list me-1"></i>Category
                 </a>
