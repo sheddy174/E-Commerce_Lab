@@ -108,7 +108,7 @@ try {
             
             // Create directories if they don't exist
             if (!file_exists($full_path)) {
-                if (!mkdir($full_path, 0777, true)) {
+                if (!mkdir($full_path, 0755, true)) {
                     error_log("Failed to create directory: " . $full_path);
                     // Product added but image failed - still return success
                     $response['status'] = 'success';
@@ -118,7 +118,7 @@ try {
                     exit();
                 }
                 // Set directory permissions
-                chmod($full_path, 0777);
+                chmod($full_path, 0755);
             }
             
             // Generate unique filename

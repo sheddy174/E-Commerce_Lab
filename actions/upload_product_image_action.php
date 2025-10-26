@@ -107,7 +107,7 @@ if (!file_exists($upload_base)) {
 
 // Create directories if they don't exist
 if (!file_exists($full_path)) {
-    if (!mkdir($full_path, 0777, true)) {
+    if (!mkdir($full_path, 0755, true)) {
         $response['status'] = 'error';
         $response['message'] = 'Failed to create upload directory';
         error_log("Failed to create directory: " . $full_path);
@@ -116,7 +116,7 @@ if (!file_exists($full_path)) {
         exit();
     }
     // Set directory permissions explicitly
-    chmod($full_path, 0777);
+    chmod($full_path, 0755);
 }
 
 // Verify directory is writable

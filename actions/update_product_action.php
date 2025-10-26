@@ -112,14 +112,14 @@ if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPL
     
     // Create directories if they don't exist
     if (!file_exists($full_path)) {
-        if (!mkdir($full_path, 0777, true)) {
+        if (!mkdir($full_path, 0755, true)) {
             $response['status'] = 'error';
             $response['message'] = 'Failed to create upload directory';
             error_log("Failed to create directory: " . $full_path);
             echo json_encode($response);
             exit();
         }
-        chmod($full_path, 0777);
+        chmod($full_path, 0755);
     }
     
     // Generate unique filename
