@@ -178,6 +178,10 @@ if (isset($_GET['login'])) {
                 Welcome, <?php echo htmlspecialchars(get_user_name()); ?>!
             </span>
 
+            <a href="actions/logout_action.php" class="btn btn-sm btn-outline-danger">
+                <i class="fas fa-sign-out-alt me-1"></i>Logout
+            </a>
+
             <?php if (is_admin()): ?>
                 <!-- Admin menu -->
                 <a href="actions/logout_action.php" class="btn btn-sm btn-outline-danger">
@@ -189,11 +193,16 @@ if (isset($_GET['login'])) {
                 <a href="admin/brand.php" class="btn btn-sm btn-outline-success">
                     <i class="fas fa-tags me-1"></i>Brand
                 </a>
+                <a href="admin/product.php" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-box-open me-1"></i>Add Product
+                </a>
             <?php endif; ?>
 
-            <!-- <a href="actions/logout_action.php" class="btn btn-sm btn-outline-danger">
-                <i class="fas fa-sign-out-alt me-1"></i>Logout
-            </a> -->
+            <!-- Products link (for all logged in users) -->
+            <a href="view/product.php" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-guitar me-1"></i>Products
+            </a>
+
         <?php else: ?>
             <!-- User is not logged in -->
             <a href="login/register.php" class="btn btn-sm btn-outline-primary">
