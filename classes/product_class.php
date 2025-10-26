@@ -7,6 +7,7 @@ require_once '../settings/db_class.php';
 
 /**
  * Product Model Class - Handles all product-related database operations
+ * Updated with Lab 7 Methods
  */
 class Product extends db_connection
 {
@@ -199,7 +200,7 @@ class Product extends db_connection
         // Delete image file if product was deleted successfully
         if ($success && $product && !empty($product['product_image'])) {
             $image_path = '../' . $product['product_image'];
-            if (file_exists($image_path)) {
+            if (file_exists($image_path) && is_file($image_path)) {
                 unlink($image_path);
             }
         }
@@ -288,7 +289,7 @@ class Product extends db_connection
     }
 
     /**
-     * Search products by keyword
+     * Search products by keyword (Basic)
      * @param string $search_term Search term
      * @return array|false Array of matching products
      */
@@ -332,6 +333,232 @@ class Product extends db_connection
         $sql = "SELECT COUNT(*) as count FROM products";
         $result = $this->db_fetch_one($sql);
         return $result ? $result['count'] : false;
+    }
+
+    /* 
+     * LAB 7 METHODS - Customer-Facing Product Display & Search
+     * These methods are designed to provide product information to customers
+     * through the front-end of the application.
+     */
+
+    /**
+     * View all products (customer-facing)
+     * @return array|false Array of all products with full details
+     */
+    public function viewAllProducts()
+    {
+        $sql = "SELECT p.*, c.cat_name, b.brand_name 
+                FROM products p 
+                LEFT JOIN categories c ON p.product_cat = c.cat_id 
+                LEFT JOIN brands b ON p.product_brand = b.brand_id 
+                ORDER BY p.product_id DESC";
+        return $this->db_fetch_all($sql);
+    }
+
+    /**
+     * View single product with full details
+     * @param int $product_id Product ID
+     * @return array|false Product details or false if not found
+     */
+    public function viewSingleProduct($product_id)
+    {
+        $stmt = $this->db->prepare("
+            SELECT p.*, c.cat_name, b.brand_name 
+            FROM products p 
+            LEFT JOIN categories c ON p.product_cat = c.cat_id 
+            LEFT JOIN brands b ON p.product_brand = b.brand_id 
+            WHERE p.product_id = ?
+        ");
+        
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param("i", $product_id);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        
+        return $result;
+    }
+
+    /**
+     * Search products by title, description, or keywords (Advanced)
+     * Searches across multiple fields and ranks results
+     * @param string $search_query Search term
+     * @return array|false Array of matching products
+     */
+    public function searchProductsAdvanced($search_query)
+    {
+        $search_term = '%' . $search_query . '%';
+        $stmt = $this->db->prepare("
+            SELECT p.*, c.cat_name, b.brand_name 
+            FROM products p 
+            LEFT JOIN categories c ON p.product_cat = c.cat_id 
+            LEFT JOIN brands b ON p.product_brand = b.brand_id 
+            WHERE p.product_title LIKE ? 
+               OR p.product_desc LIKE ? 
+               OR p.product_keywords LIKE ?
+               OR c.cat_name LIKE ?
+               OR b.brand_name LIKE ?
+            ORDER BY 
+                CASE 
+                    WHEN p.product_title LIKE ? THEN 1
+                    WHEN p.product_keywords LIKE ? THEN 2
+                    ELSE 3
+                END,
+                p.product_title ASC
+        ");
+        
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param("sssssss", $search_term, $search_term, $search_term, 
+                         $search_term, $search_term, $search_term, $search_term);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $products = [];
+        
+        while ($row = $result->fetch_assoc()) {
+            $products[] = $row;
+        }
+        
+        $stmt->close();
+        return $products;
+    }
+
+    /**
+     * Filter products by category
+     * @param int $cat_id Category ID
+     * @return array|false Array of products in category
+     */
+    public function filterProductsByCategory($cat_id)
+    {
+        $stmt = $this->db->prepare("
+            SELECT p.*, c.cat_name, b.brand_name 
+            FROM products p 
+            LEFT JOIN categories c ON p.product_cat = c.cat_id 
+            LEFT JOIN brands b ON p.product_brand = b.brand_id 
+            WHERE p.product_cat = ? 
+            ORDER BY p.product_title ASC
+        ");
+        
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param("i", $cat_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $products = [];
+        
+        while ($row = $result->fetch_assoc()) {
+            $products[] = $row;
+        }
+        
+        $stmt->close();
+        return $products;
+    }
+
+    /**
+     * Filter products by brand
+     * @param int $brand_id Brand ID
+     * @return array|false Array of products by brand
+     */
+    public function filterProductsByBrand($brand_id)
+    {
+        $stmt = $this->db->prepare("
+            SELECT p.*, c.cat_name, b.brand_name 
+            FROM products p 
+            LEFT JOIN categories c ON p.product_cat = c.cat_id 
+            LEFT JOIN brands b ON p.product_brand = b.brand_id 
+            WHERE p.product_brand = ? 
+            ORDER BY p.product_title ASC
+        ");
+        
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param("i", $brand_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $products = [];
+        
+        while ($row = $result->fetch_assoc()) {
+            $products[] = $row;
+        }
+        
+        $stmt->close();
+        return $products;
+    }
+
+    /**
+     * Filter products by price range
+     * @param float $min_price Minimum price
+     * @param float $max_price Maximum price
+     * @return array|false Array of products in price range
+     */
+    public function filterProductsByPriceRange($min_price, $max_price)
+    {
+        $stmt = $this->db->prepare("
+            SELECT p.*, c.cat_name, b.brand_name 
+            FROM products p 
+            LEFT JOIN categories c ON p.product_cat = c.cat_id 
+            LEFT JOIN brands b ON p.product_brand = b.brand_id 
+            WHERE p.product_price BETWEEN ? AND ? 
+            ORDER BY p.product_price ASC
+        ");
+        
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param("dd", $min_price, $max_price);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $products = [];
+        
+        while ($row = $result->fetch_assoc()) {
+            $products[] = $row;
+        }
+        
+        $stmt->close();
+        return $products;
+    }
+
+    /**
+     * Get featured/latest products (limit)
+     * @param int $limit Number of products to return
+     * @return array|false Array of latest products
+     */
+    public function getFeaturedProducts($limit = 8)
+    {
+        $stmt = $this->db->prepare("
+            SELECT p.*, c.cat_name, b.brand_name 
+            FROM products p 
+            LEFT JOIN categories c ON p.product_cat = c.cat_id 
+            LEFT JOIN brands b ON p.product_brand = b.brand_id 
+            ORDER BY p.product_id DESC 
+            LIMIT ?
+        ");
+        
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param("i", $limit);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $products = [];
+        
+        while ($row = $result->fetch_assoc()) {
+            $products[] = $row;
+        }
+        
+        $stmt->close();
+        return $products;
     }
 }
 ?>

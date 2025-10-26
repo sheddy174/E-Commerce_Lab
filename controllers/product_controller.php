@@ -281,4 +281,150 @@ function get_product_count_ctr()
         return false;
     }
 }
+
+/*
+ * Customer-Facing Product Display & Search
+ * LAB 7 Additions
+ */
+
+/**
+ * View all products (customer-facing)
+ * Enhanced version for customer product display
+ * @return array|false Array of all products
+ */
+function view_all_products_ctr()
+{
+    try {
+        $product = new Product();
+        return $product->viewAllProducts();
+    } catch (Exception $e) {
+        error_log("View all products exception: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * View single product with full details
+ * For detailed product view page
+ * @param int $product_id Product ID
+ * @return array|false Product details or false if not found
+ */
+function view_single_product_ctr($product_id)
+{
+    try {
+        if (!is_numeric($product_id) || $product_id <= 0) {
+            return false;
+        }
+        
+        $product = new Product();
+        return $product->viewSingleProduct($product_id);
+    } catch (Exception $e) {
+        error_log("View single product exception: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Search products by query (Advanced)
+ * Searches across title, description, keywords, category, and brand
+ * @param string $search_query Search term
+ * @return array|false Array of matching products
+ */
+function search_products_advanced_ctr($search_query)
+{
+    try {
+        if (empty(trim($search_query))) {
+            return view_all_products_ctr();
+        }
+        
+        $product = new Product();
+        return $product->searchProductsAdvanced(trim($search_query));
+    } catch (Exception $e) {
+        error_log("Search products advanced exception: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Filter products by category
+ * For category-based filtering on customer pages
+ * @param int $cat_id Category ID
+ * @return array|false Array of products in category
+ */
+function filter_products_by_category_ctr($cat_id)
+{
+    try {
+        if (!is_numeric($cat_id) || $cat_id <= 0) {
+            return false;
+        }
+        
+        $product = new Product();
+        return $product->filterProductsByCategory($cat_id);
+    } catch (Exception $e) {
+        error_log("Filter by category exception: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Filter products by brand
+ * For brand-based filtering on customer pages
+ * @param int $brand_id Brand ID
+ * @return array|false Array of products by brand
+ */
+function filter_products_by_brand_ctr($brand_id)
+{
+    try {
+        if (!is_numeric($brand_id) || $brand_id <= 0) {
+            return false;
+        }
+        
+        $product = new Product();
+        return $product->filterProductsByBrand($brand_id);
+    } catch (Exception $e) {
+        error_log("Filter by brand exception: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Filter products by price range
+ * For price-based filtering
+ * @param float $min_price Minimum price
+ * @param float $max_price Maximum price
+ * @return array|false Array of products in range
+ */
+function filter_products_by_price_ctr($min_price, $max_price)
+{
+    try {
+        if (!is_numeric($min_price) || !is_numeric($max_price) || $min_price < 0 || $max_price < $min_price) {
+            return false;
+        }
+        
+        $product = new Product();
+        return $product->filterProductsByPriceRange($min_price, $max_price);
+    } catch (Exception $e) {
+        error_log("Filter by price exception: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Get featured/latest products
+ * For homepage or featured sections
+ * @param int $limit Number of products to return
+ * @return array|false Array of latest products
+ */
+function get_featured_products_ctr($limit = 8)
+{
+    try {
+        $product = new Product();
+        return $product->getFeaturedProducts($limit);
+    } catch (Exception $e) {
+        error_log("Get featured products exception: " . $e->getMessage());
+        return false;
+    }
+}
 ?>
+
+
