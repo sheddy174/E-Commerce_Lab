@@ -23,7 +23,7 @@ if (isset($_GET['login'])) {
 }
 
 // Get featured products (latest 8 products)
-$featured_products = get_featured_products_ctr(8) ?: [];
+//$featured_products = get_featured_products_ctr(8) ?: [];
 ?>
 <!DOCTYPE html>
 <html lang="en">
