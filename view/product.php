@@ -154,7 +154,7 @@ if ($products === false) {
                                 <?php 
                                 // Use online placeholder if no image exists
                                 $image_url = !empty($product['product_image']) 
-                                    ? '../' . $product['product_image'] 
+                                    ? '../../' . $product['product_image'] 
                                     : 'https://placehold.co/400x400/E3F2FD/2E86AB?text=GhanaTunes';
                                 ?>
                                 <img src="<?php echo htmlspecialchars($image_url); ?>" 

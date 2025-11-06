@@ -389,7 +389,7 @@ $paginated_products = array_slice($products, $offset, $items_per_page);
                             <div class="product-image-container">
                                 <?php 
                                 $image_url = !empty($product['product_image']) 
-                                    ? '../' . $product['product_image'] 
+                                    ? '../../' . $product['product_image'] 
                                     : 'https://placehold.co/400x400/E3F2FD/2E86AB?text=GhanaTunes';
                                 ?>
                                 <a href="single_product.php?id=<?php echo $product['product_id']; ?>">

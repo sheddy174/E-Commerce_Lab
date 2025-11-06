@@ -277,7 +277,7 @@ $related_products = array_slice($related_products, 0, 4);
                 <div class="col-lg-6 mb-4 mb-lg-0">
                     <?php 
                     $image_url = !empty($product['product_image']) 
-                        ? '../' . $product['product_image'] 
+                        ? '../../' . $product['product_image'] 
                         : 'https://placehold.co/600x600/E3F2FD/2E86AB?text=' . urlencode($product['product_title']);
                     ?>
                     <img src="<?php echo htmlspecialchars($image_url); ?>" 

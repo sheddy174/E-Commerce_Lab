@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'settings/core.php';
+require_once 'controllers/product_controller.php';
 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -20,6 +21,9 @@ if (isset($_GET['login'])) {
     $message = 'Registration successful! Please login to continue.';
     $message_type = 'success';
 }
+
+// Get featured products (latest 8 products)
+$featured_products = get_featured_products_ctr(8) ?: [];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -50,82 +54,82 @@ if (isset($_GET['login'])) {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        .menu-tray {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            background: rgba(255, 255, 255, 0.98);
-            border: 1px solid rgba(46, 134, 171, 0.2);
-            border-radius: 0.75rem;
-            padding: 0.75rem 1rem;
-            box-shadow: 0 0.5rem 1rem rgba(46, 134, 171, 0.15);
-            backdrop-filter: blur(10px);
-            z-index: 1000;
+        .navbar-custom {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            box-shadow: 0 0.5rem 1rem rgba(46, 134, 171, 0.3);
+            padding: 1rem 0;
         }
 
-        .menu-tray .btn {
-            margin-left: 0.5rem;
-            border-radius: 0.5rem;
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
+        .navbar-custom .navbar-brand {
+            color: white;
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .navbar-custom .nav-link {
+            color: rgba(255, 255, 255, 0.9);
             font-weight: 500;
+            margin: 0 0.5rem;
             transition: all 0.3s ease;
         }
 
-        .btn-outline-primary {
-            border-color: var(--primary-color);
-            color: var(--primary-color);
-        }
-
-        .btn-outline-primary:hover {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 0.25rem 0.5rem rgba(46, 134, 171, 0.3);
-        }
-
-        .btn-outline-success {
-            border-color: #198754;
-            color: #198754;
-        }
-
-        .btn-outline-success:hover {
-            background-color: #198754;
-            border-color: #198754;
+        .navbar-custom .nav-link:hover {
             color: white;
             transform: translateY(-2px);
         }
 
-        .btn-outline-danger {
-            border-color: #dc3545;
-            color: #dc3545;
+        .navbar-custom .btn {
+            margin-left: 0.5rem;
         }
 
-        .btn-outline-danger:hover {
-            background-color: #dc3545;
-            border-color: #dc3545;
+        .search-box {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 3rem;
+            padding: 0.25rem 0.5rem;
+            display: flex;
+            align-items: center;
+            min-width: 300px;
+        }
+
+        .search-box input {
+            border: none;
+            outline: none;
+            background: transparent;
+            padding: 0.5rem 1rem;
+            flex-grow: 1;
+        }
+
+        .search-box button {
+            background: var(--primary-color);
+            border: none;
             color: white;
-            transform: translateY(-2px);
+            padding: 0.5rem 1.5rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
 
-        .welcome-section {
-            padding-top: 6rem;
+        .search-box button:hover {
+            background: var(--primary-hover);
+        }
+
+        .hero-section {
+            padding: 4rem 0;
             text-align: center;
         }
 
-        .welcome-section h1 {
+        .hero-section h1 {
             color: var(--primary-color);
             font-weight: 800;
             margin-bottom: 1rem;
             font-size: 3rem;
         }
 
-        .welcome-section .lead {
+        .hero-section .lead {
             color: var(--secondary-color);
             font-size: 1.2rem;
             margin-bottom: 2rem;
-            max-width: 600px;
+            max-width: 700px;
             margin-left: auto;
             margin-right: auto;
         }
@@ -161,74 +165,197 @@ if (isset($_GET['login'])) {
             border: none;
             margin-bottom: 2rem;
         }
+
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 1rem 2rem rgba(46, 134, 171, 0.2);
+        }
+
+        .feature-card i {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .product-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 1rem 2rem rgba(46, 134, 171, 0.2);
+        }
+
+        .product-image-container {
+            position: relative;
+            padding-top: 100%;
+            overflow: hidden;
+            background: #f8f9fa;
+        }
+
+        .product-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .product-body {
+            padding: 1.5rem;
+        }
+
+        .product-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            min-height: 2.5rem;
+        }
+
+        .product-price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            text-align: center;
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 3rem;
+            font-size: 2.5rem;
+        }
     </style>
 </head>
 
 <body>
-    <!-- Navigation Menu -->
-    <div class="menu-tray">
-        <span class="me-3 fw-semibold text-muted">
-            <i class="fas fa-bars me-2"></i>Menu:
-        </span>
-
-        <?php if (is_logged_in()): ?>
-            <!-- User is logged in -->
-            <span class="me-2 text-primary fw-semibold">
-                <i class="fas fa-user me-1"></i>
-                Welcome, <?php echo htmlspecialchars(get_user_name()); ?>!
-            </span>
-
-            <a href="actions/logout_action.php" class="btn btn-sm btn-outline-danger">
-                <i class="fas fa-sign-out-alt me-1"></i>Logout
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container">
+            <a class="navbar-brand" href="index.php">
+                <i class="fas fa-guitar me-2"></i>GhanaTunes
             </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.php">
+                            <i class="fas fa-home me-1"></i>Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="view/all_product.php">
+                            <i class="fas fa-guitar me-1"></i>All Products
+                        </a>
+                    </li>
+                </ul>
 
-            <?php if (is_admin()): ?>
-                <!-- Admin menu -->
-                <a href="admin/category.php" class="btn btn-sm btn-outline-success">
-                    <i class="fas fa-list me-1"></i>Category
-                </a>
-                <a href="admin/brand.php" class="btn btn-sm btn-outline-success">
-                    <i class="fas fa-tags me-1"></i>Brand
-                </a>
-                <a href="admin/product.php" class="btn btn-sm btn-outline-success">
-                    <i class="fas fa-box-open me-1"></i>Add Product
-                </a>
-            <?php endif; ?>
+                <!-- Search Box -->
+                <form class="d-flex me-3" action="view/product_search_result.php" method="GET">
+                    <div class="search-box">
+                        <input type="text" 
+                               name="query" 
+                               placeholder="Search instruments..." 
+                               required>
+                        <button type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
 
-            <!-- Products link (for all logged in users) -->
-            <a href="view/product.php" class="btn btn-sm btn-outline-primary">
-                <i class="fas fa-guitar me-1"></i>Products
-            </a>
-
-        <?php else: ?>
-            <!-- User is not logged in -->
-            <a href="login/register.php" class="btn btn-sm btn-outline-primary">
-                <i class="fas fa-user-plus me-1"></i>Register
-            </a>
-            <a href="login/login.php" class="btn btn-sm btn-outline-primary">
-                <i class="fas fa-sign-in-alt me-1"></i>Login
-            </a>
-        <?php endif; ?>
-    </div>
+                <!-- Auth Menu -->
+                <ul class="navbar-nav">
+                    <?php if (is_logged_in()): ?>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle me-1"></i>
+                                <?php echo htmlspecialchars(get_user_name()); ?>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <?php if (is_admin()): ?>
+                                    <li>
+                                        <a class="dropdown-item" href="admin/category.php">
+                                            <i class="fas fa-list me-2"></i>Categories
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="admin/brand.php">
+                                            <i class="fas fa-tags me-2"></i>Brands
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="admin/product.php">
+                                            <i class="fas fa-box-open me-2"></i>Manage Products
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                <?php endif; ?>
+                                <li>
+                                    <a class="dropdown-item" href="actions/logout_action.php">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    <?php else: ?>
+                        <li class="nav-item">
+                            <a href="login/login.php" class="btn btn-outline-light btn-sm">
+                                <i class="fas fa-sign-in-alt me-1"></i>Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="login/register.php" class="btn btn-light btn-sm">
+                                <i class="fas fa-user-plus me-1"></i>Register
+                            </a>
+                        </li>
+                    <?php endif; ?>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
     <div class="container">
         <!-- Success/Error Messages -->
         <?php if ($message): ?>
-            <div class="alert alert-<?php echo $message_type; ?> alert-dismissible fade show mt-5" role="alert">
+            <div class="alert alert-<?php echo $message_type; ?> alert-dismissible fade show mt-4" role="alert">
                 <i class="fas fa-<?php echo $message_type === 'success' ? 'check-circle' : ($message_type === 'info' ? 'info-circle' : 'exclamation-triangle'); ?> me-2"></i>
                 <?php echo $message; ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
 
-        <!-- Welcome Section -->
-        <div class="welcome-section">
+        <!-- Hero Section -->
+        <div class="hero-section">
             <div class="row justify-content-center">
                 <div class="col-lg-10">
                     <?php if (is_logged_in()): ?>
                         <!-- Logged in user welcome -->
                         <div class="user-info">
-                            <h2><i class="fas fa-music me-2 text-primary"></i>Welcome back, <?php echo htmlspecialchars(get_user_name()); ?>!</h2>
+                            <h2>
+                                <i class="fas fa-music me-2 text-primary"></i>
+                                Welcome back, <?php echo htmlspecialchars(get_user_name()); ?>!
+                            </h2>
                             <p class="mb-0">
                                 <i class="fas fa-envelope me-2 text-muted"></i>
                                 <strong>Email:</strong> <?php echo htmlspecialchars(get_user_email()); ?>
@@ -243,34 +370,35 @@ if (isset($_GET['login'])) {
                             </p>
                         </div>
 
-                        <h1><i class="fas fa-guitar me-3"></i>GhanaTunes Dashboard</h1>
+                        <h1><i class="fas fa-guitar me-3"></i>Explore Our Collection</h1>
                         <p class="lead">
-                            Welcome to your musical journey! Explore traditional Ghanaian instruments and modern music equipment.
+                            Discover authentic Ghanaian instruments and modern music equipment
                         </p>
 
                         <div class="d-flex justify-content-center gap-3 mt-4">
+                            <a href="view/all_product.php" class="btn btn-ocean btn-lg">
+                                <i class="fas fa-shopping-bag me-2"></i>Browse All Products
+                            </a>
                             <?php if (is_admin()): ?>
-                                <a href="admin/category.php" class="btn btn-lg btn-ocean">
-                                    <i class="fas fa-cog me-2"></i>Manage Categories
+                                <a href="admin/product.php" class="btn btn-outline-primary btn-lg">
+                                    <i class="fas fa-cog me-2"></i>Manage Products
                                 </a>
                             <?php endif; ?>
-                            <a href="#" class="btn btn-lg btn-ocean">
-                                <i class="fas fa-shopping-bag me-2"></i>Browse Instruments
-                            </a>
                         </div>
                     <?php else: ?>
                         <!-- Guest user welcome -->
                         <h1><i class="fas fa-guitar me-3"></i>Welcome to GhanaTunes</h1>
                         <p class="lead">
-                            Discover authentic Ghanaian musical instruments and modern equipment. Your premier destination for musical excellence.
+                            Discover authentic Ghanaian musical instruments and modern equipment. 
+                            Your premier destination for musical excellence.
                         </p>
 
                         <div class="d-flex justify-content-center gap-3 mt-4">
-                            <a href="login/register.php" class="btn btn-lg btn-ocean">
-                                <i class="fas fa-user-plus me-2"></i>Get Started - Register Now
+                            <a href="view/all_product.php" class="btn btn-ocean btn-lg">
+                                <i class="fas fa-shopping-bag me-2"></i>Browse Products
                             </a>
-                            <a href="login/login.php" class="btn btn-lg" style="border: 2px solid var(--primary-color); color: var(--primary-color); background: transparent; border-radius: 0.5rem; padding: 0.875rem 2rem; font-weight: 600;">
-                                <i class="fas fa-sign-in-alt me-2"></i>Already a Member?
+                            <a href="login/register.php" class="btn btn-outline-primary btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>Get Started
                             </a>
                         </div>
                     <?php endif; ?>
@@ -278,32 +406,90 @@ if (isset($_GET['login'])) {
             </div>
         </div>
 
+        <!-- Featured Products Section -->
+        <?php if (!empty($featured_products)): ?>
+            <div class="mb-5">
+                <h2 class="section-title">
+                    <i class="fas fa-star me-2"></i>Featured Products
+                </h2>
+                
+                <div class="row g-4 mb-4">
+                    <?php foreach (array_slice($featured_products, 0, 4) as $product): ?>
+                        <div class="col-lg-3 col-md-6">
+                            <div class="product-card">
+                                <div class="product-image-container">
+                                    <?php 
+                                    $image_url = !empty($product['product_image']) 
+                                        ? $product['product_image'] 
+                                        : 'https://placehold.co/400x400/E3F2FD/2E86AB?text=GhanaTunes';
+                                    ?>
+                                    <a href="view/single_product.php?id=<?php echo $product['product_id']; ?>">
+                                        <img src="<?php echo htmlspecialchars($image_url); ?>" 
+                                             class="product-image" 
+                                             alt="<?php echo htmlspecialchars($product['product_title']); ?>"
+                                             onerror="this.src='https://placehold.co/400x400/E3F2FD/2E86AB?text=GhanaTunes'">
+                                    </a>
+                                </div>
+                                
+                                <div class="product-body">
+                                    <a href="view/single_product.php?id=<?php echo $product['product_id']; ?>" 
+                                       class="text-decoration-none">
+                                        <h5 class="product-title">
+                                            <?php echo htmlspecialchars($product['product_title']); ?>
+                                        </h5>
+                                    </a>
+                                    
+                                    <div class="product-price">
+                                        GHS <?php echo number_format($product['product_price'], 2); ?>
+                                    </div>
+                                    
+                                    <a href="view/single_product.php?id=<?php echo $product['product_id']; ?>" 
+                                       class="btn btn-ocean w-100">
+                                        <i class="fas fa-eye me-2"></i>View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <div class="text-center">
+                    <a href="view/all_product.php" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-th me-2"></i>View All Products
+                    </a>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <!-- Features Section -->
-        <div class="row mt-5">
-            <div class="col-md-4 mb-4">
-                <div class="text-center p-4 bg-white rounded-3 shadow-sm h-100">
-                    <i class="fas fa-drum fa-3x text-primary mb-3"></i>
-                    <h5>Traditional Instruments</h5>
-                    <p class="text-muted">Authentic Ghanaian djembes, kagan, and seperewa crafted by local artisans</p>
+        <div class="mb-5">
+            <h2 class="section-title">Why Choose GhanaTunes?</h2>
+            
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card text-center">
+                        <i class="fas fa-drum"></i>
+                        <h5>Traditional Instruments</h5>
+                        <p class="text-muted">Authentic Ghanaian djembes, kagan, and seperewa crafted by local artisans</p>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-4 mb-4">
-                <div class="text-center p-4 bg-white rounded-3 shadow-sm h-100">
-                    <i class="fas fa-guitar fa-3x text-primary mb-3"></i>
-                    <h5>Modern Equipment</h5>
-                    <p class="text-muted">Quality guitars, keyboards, and professional audio equipment</p>
+                <div class="col-md-4">
+                    <div class="feature-card text-center">
+                        <i class="fas fa-guitar"></i>
+                        <h5>Modern Equipment</h5>
+                        <p class="text-muted">Quality guitars, keyboards, and professional audio equipment</p>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-4 mb-4">
-                <div class="text-center p-4 bg-white rounded-3 shadow-sm h-100">
-                    <i class="fas fa-shipping-fast fa-3x text-primary mb-3"></i>
-                    <h5>Fast Delivery</h5>
-                    <p class="text-muted">Quick and reliable shipping across Ghana with mobile money payment</p>
+                <div class="col-md-4">
+                    <div class="feature-card text-center">
+                        <i class="fas fa-shipping-fast"></i>
+                        <h5>Fast Delivery</h5>
+                        <p class="text-muted">Quick and reliable shipping across Ghana with mobile money payment</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
