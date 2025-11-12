@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Core settings and utility functions for the e-commerce platform
  * Handles session management, authentication, and common utilities
@@ -37,7 +38,7 @@ function is_admin()
     if (!is_logged_in()) {
         return false;
     }
-    
+
     // Check if user role is set and equals 1 (admin role)
     return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 1;
 }
@@ -70,7 +71,7 @@ function is_customer()
     if (!is_logged_in()) {
         return false;
     }
-    
+
     // Check if user role is set and equals 2 (customer role)
     return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 2;
 }
@@ -100,7 +101,7 @@ function require_admin($redirect_url = '../login/login.php')
         header("Location: " . $redirect_url);
         exit();
     }
-    
+
     if (!is_admin()) {
         header("Location: " . $redirect_url);
         exit();
@@ -163,13 +164,25 @@ function set_user_session($user_data)
     $_SESSION['login_time'] = time();
 }
 
+// /**
+//  * Get current user's full name
+//  * @return string|false User's full name or false if not logged in
+//  */
+// function get_user_name()
+// {
+//     return is_logged_in() ? $_SESSION['customer_name'] : false;
+// }
+
 /**
  * Get current user's full name
  * @return string|false User's full name or false if not logged in
  */
 function get_user_name()
 {
-    return is_logged_in() ? $_SESSION['customer_name'] : false;
+    if (is_logged_in() && isset($_SESSION['customer_name'])) {
+        return $_SESSION['customer_name'];
+    }
+    return false;
 }
 
 /**
@@ -178,8 +191,20 @@ function get_user_name()
  */
 function get_user_email()
 {
-    return is_logged_in() ? $_SESSION['customer_email'] : false;
+    if (is_logged_in() && isset($_SESSION['customer_email'])) {
+        return $_SESSION['customer_email'];
+    }
+    return false;
 }
+
+// /**
+//  * Get current user's email
+//  * @return string|false User's email or false if not logged in
+//  */
+// function get_user_email()
+// {
+//     return is_logged_in() ? $_SESSION['customer_email'] : false;
+// }
 
 /**
  * Check if current session is valid (not expired)
@@ -191,11 +216,11 @@ function is_session_valid($max_lifetime = 86400)
     if (!is_logged_in()) {
         return false;
     }
-    
+
     if (isset($_SESSION['login_time'])) {
         return (time() - $_SESSION['login_time']) < $max_lifetime;
     }
-    
+
     return true; // If login_time is not set, assume valid for backward compatibility
 }
 
@@ -244,11 +269,11 @@ function generate_random_password($length = 12)
     $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()';
     $password = '';
     $charactersLength = strlen($characters);
-    
+
     for ($i = 0; $i < $length; $i++) {
         $password .= $characters[rand(0, $charactersLength - 1)];
     }
-    
+
     return $password;
 }
 
@@ -270,32 +295,32 @@ function is_valid_email($email)
 function validate_password_strength($password)
 {
     $result = ['valid' => false, 'message' => ''];
-    
+
     if (strlen($password) < 8) {
         $result['message'] = 'Password must be at least 8 characters long';
         return $result;
     }
-    
+
     if (!preg_match('/[a-z]/', $password)) {
         $result['message'] = 'Password must contain at least one lowercase letter';
         return $result;
     }
-    
+
     if (!preg_match('/[A-Z]/', $password)) {
         $result['message'] = 'Password must contain at least one uppercase letter';
         return $result;
     }
-    
+
     if (!preg_match('/[0-9]/', $password)) {
         $result['message'] = 'Password must contain at least one number';
         return $result;
     }
-    
+
     if (!preg_match('/[^a-zA-Z0-9]/', $password)) {
         $result['message'] = 'Password must contain at least one special character';
         return $result;
     }
-    
+
     $result['valid'] = true;
     $result['message'] = 'Password is strong';
     return $result;
@@ -314,13 +339,13 @@ function log_activity($message, $level = 'info')
     $user_id = get_user_id() ?: 'guest';
     $user_role = is_admin() ? 'admin' : (is_customer() ? 'customer' : 'guest');
     $log_entry = "[{$timestamp}] [{$level}] [User: {$user_id}] [Role: {$user_role}] {$message}" . PHP_EOL;
-    
+
     // Create logs directory if it doesn't exist
     $log_dir = dirname($log_file);
     if (!is_dir($log_dir)) {
         mkdir($log_dir, 0755, true);
     }
-    
+
     file_put_contents($log_file, $log_entry, FILE_APPEND | LOCK_EX);
 }
 
@@ -343,13 +368,13 @@ function format_currency($amount, $currency = 'GHS')
 function time_ago($datetime)
 {
     $time = time() - strtotime($datetime);
-    
+
     if ($time < 60) return 'just now';
     if ($time < 3600) return floor($time / 60) . ' minutes ago';
     if ($time < 86400) return floor($time / 3600) . ' hours ago';
     if ($time < 2592000) return floor($time / 86400) . ' days ago';
     if ($time < 31536000) return floor($time / 2592000) . ' months ago';
-    
+
     return floor($time / 31536000) . ' years ago';
 }
 
@@ -362,7 +387,7 @@ function get_session_debug_info()
     if (!is_logged_in()) {
         return ['status' => 'not_logged_in'];
     }
-    
+
     return [
         'status' => 'logged_in',
         'user_id' => get_user_id(),
@@ -374,5 +399,27 @@ function get_session_debug_info()
         'login_time' => $_SESSION['login_time'] ?? 'unknown',
         'session_valid' => is_session_valid()
     ];
+}
+
+/**
+ * Safely display user name with fallback
+ * @param string $fallback Fallback text if user not logged in
+ * @return string User name or fallback
+ */
+function display_user_name($fallback = 'Guest')
+{
+    $name = get_user_name();
+    return $name ? htmlspecialchars($name) : $fallback;
+}
+
+/**
+ * Safely display user email with fallback
+ * @param string $fallback Fallback text if email not available
+ * @return string User email or fallback
+ */
+function display_user_email($fallback = 'No email')
+{
+    $email = get_user_email();
+    return $email ? htmlspecialchars($email) : $fallback;
 }
 ?>

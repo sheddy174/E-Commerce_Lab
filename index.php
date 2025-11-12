@@ -290,7 +290,7 @@ if (isset($_GET['login'])) {
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-user-circle me-1"></i>
-                                <?php echo htmlspecialchars(get_user_name()); ?>
+                                <?php echo htmlspecialchars(get_user_name() ?: 'Guest'); ?>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <?php if (is_admin()): ?>
@@ -354,11 +354,11 @@ if (isset($_GET['login'])) {
                         <div class="user-info">
                             <h2>
                                 <i class="fas fa-music me-2 text-primary"></i>
-                                Welcome back, <?php echo htmlspecialchars(get_user_name()); ?>!
+                                Welcome back, <?php echo display_user_name(); ?>!
                             </h2>
                             <p class="mb-0">
                                 <i class="fas fa-envelope me-2 text-muted"></i>
-                                <strong>Email:</strong> <?php echo htmlspecialchars(get_user_email()); ?>
+                                <strong>Email:</strong> <?php echo display_user_email(); ?>
                                 <span class="mx-3">|</span>
                                 <i class="fas fa-user-tag me-2 text-muted"></i>
                                 <strong>Role:</strong> <?php echo is_admin() ? 'Administrator' : 'Customer'; ?>
