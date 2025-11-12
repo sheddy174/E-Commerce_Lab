@@ -243,20 +243,20 @@ function validate_category_name_ctr($cat_name)
     $result['valid'] = true;
     $result['message'] = 'Category name is valid';
     return $result;
+}
 
-    /**
-     * Get count of categories added today
-     * @return int Count of categories added today
-     */
-    function get_categories_added_today_ctr()
-    {
-        try {
-            $category = new Category();
-            return $category->getCategoriesAddedTodayCount();
-        } catch (Exception $e) {
-            error_log("Get categories added today exception: " . $e->getMessage());
-            return 0;
-        }
+/**
+ * Get count of categories added today
+ * @return int Count of categories added today
+ */
+function get_categories_added_today_ctr()
+{
+    try {
+        $category = new Category();
+        return $category->getCategoriesAddedTodayCount();
+    } catch (Exception $e) {
+        error_log("Get categories added today exception: " . $e->getMessage());
+        return 0;
     }
 }
 ?>

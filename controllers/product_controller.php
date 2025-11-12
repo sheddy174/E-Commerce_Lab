@@ -456,20 +456,20 @@ function get_featured_products_ctr($limit = 8)
         error_log("Get featured products exception: " . $e->getMessage());
         return false;
     }
+}
 
-    /**
-     * Get count of products added today
-     * @return int Count of products added today
-     */
-    function get_products_added_today_ctr()
-    {
-        try {
-            $product = new Product();
-            return $product->getProductsAddedTodayCount();
-        } catch (Exception $e) {
-            error_log("Get products added today exception: " . $e->getMessage());
-            return 0;
-        }
+/**
+ * Get count of products added today
+ * @return int Count of products added today
+ */
+function get_products_added_today_ctr()
+{
+    try {
+        $product = new Product();
+        return $product->getProductsAddedTodayCount();
+    } catch (Exception $e) {
+        error_log("Get products added today exception: " . $e->getMessage());
+        return 0;
     }
 }
 ?>

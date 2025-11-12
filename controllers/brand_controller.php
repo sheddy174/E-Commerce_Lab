@@ -258,20 +258,20 @@ function validate_brand_ctr($brand_name, $brand_cat)
     $result['valid'] = true;
     $result['message'] = 'Brand is valid';
     return $result;
+}
 
-    /**
-     * Get count of brands added today
-     * @return int Count of brands added today
-     */
-    function get_brands_added_today_ctr()
-    {
-        try {
-            $brand = new Brand();
-            return $brand->getBrandsAddedTodayCount();
-        } catch (Exception $e) {
-            error_log("Get brands added today exception: " . $e->getMessage());
-            return 0;
-        }
+/**
+ * Get count of brands added today
+ * @return int Count of brands added today
+ */
+function get_brands_added_today_ctr()
+{
+    try {
+        $brand = new Brand();
+        return $brand->getBrandsAddedTodayCount();
+    } catch (Exception $e) {
+        error_log("Get brands added today exception: " . $e->getMessage());
+        return 0;
     }
 }
 ?>
