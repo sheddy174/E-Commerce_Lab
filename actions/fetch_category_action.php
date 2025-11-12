@@ -36,6 +36,8 @@ try {
         $response['message'] = 'Categories retrieved successfully';
         $response['data'] = $categories;
         $response['count'] = count($categories);
+        $response['added_today'] = get_categories_added_today_ctr(); // ADD THIS LINE
+
         
         error_log("Categories fetched successfully - Count: " . count($categories) . ", User: " . get_user_email());
     } else {

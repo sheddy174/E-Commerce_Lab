@@ -36,7 +36,7 @@ try {
         $response['message'] = 'Products retrieved successfully';
         $response['data'] = $products;
         $response['count'] = count($products);
-        
+        $response['added_today'] = get_products_added_today_ctr(); // ADD THIS LINE
         error_log("Products fetched successfully - Count: " . count($products) . ", User: " . get_user_email());
     } else {
         $response['status'] = 'error';

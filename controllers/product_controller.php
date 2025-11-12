@@ -17,18 +17,26 @@ require_once '../classes/product_class.php';
  * @param string $product_keywords Keywords
  * @return int|false Product ID on success, false on failure
  */
-function add_product_ctr($product_cat, $product_brand, $product_title, $product_price, 
-                        $product_desc, $product_image, $product_keywords)
-{
+function add_product_ctr(
+    $product_cat,
+    $product_brand,
+    $product_title,
+    $product_price,
+    $product_desc,
+    $product_image,
+    $product_keywords
+) {
     try {
         // Validate inputs
-        if (empty($product_cat) || !is_numeric($product_cat) ||
+        if (
+            empty($product_cat) || !is_numeric($product_cat) ||
             empty($product_brand) || !is_numeric($product_brand) ||
             empty(trim($product_title)) ||
-            empty($product_price) || !is_numeric($product_price)) {
+            empty($product_price) || !is_numeric($product_price)
+        ) {
             return false;
         }
-        
+
         // Sanitize inputs
         $product_title = trim($product_title);
         $product_desc = trim($product_desc);
@@ -36,13 +44,20 @@ function add_product_ctr($product_cat, $product_brand, $product_title, $product_
         $product_cat = (int) $product_cat;
         $product_brand = (int) $product_brand;
         $product_price = (float) $product_price;
-        
+
         $product = new Product();
-        $result = $product->addProduct($product_cat, $product_brand, $product_title, 
-                                      $product_price, $product_desc, $product_image, $product_keywords);
-        
+        $result = $product->addProduct(
+            $product_cat,
+            $product_brand,
+            $product_title,
+            $product_price,
+            $product_desc,
+            $product_image,
+            $product_keywords
+        );
+
         error_log("Add product attempt: " . $product_title . " - Result: " . ($result ? 'Success (ID: ' . $result . ')' : 'Failed'));
-        
+
         return $result;
     } catch (Exception $e) {
         error_log("Add product exception: " . $e->getMessage());
@@ -76,7 +91,7 @@ function get_product_by_id_ctr($product_id)
         if (!is_numeric($product_id) || $product_id <= 0) {
             return false;
         }
-        
+
         $product = new Product();
         return $product->getProductById($product_id);
     } catch (Exception $e) {
@@ -96,7 +111,7 @@ function get_products_by_category_ctr($cat_id)
         if (!is_numeric($cat_id) || $cat_id <= 0) {
             return false;
         }
-        
+
         $product = new Product();
         return $product->getProductsByCategory($cat_id);
     } catch (Exception $e) {
@@ -116,7 +131,7 @@ function get_products_by_brand_ctr($brand_id)
         if (!is_numeric($brand_id) || $brand_id <= 0) {
             return false;
         }
-        
+
         $product = new Product();
         return $product->getProductsByBrand($brand_id);
     } catch (Exception $e) {
@@ -137,30 +152,47 @@ function get_products_by_brand_ctr($brand_id)
  * @param string $product_keywords Keywords
  * @return bool Success status
  */
-function update_product_ctr($product_id, $product_cat, $product_brand, $product_title, 
-                           $product_price, $product_desc, $product_image, $product_keywords)
-{
+function update_product_ctr(
+    $product_id,
+    $product_cat,
+    $product_brand,
+    $product_title,
+    $product_price,
+    $product_desc,
+    $product_image,
+    $product_keywords
+) {
     try {
         // Validate inputs
-        if (!is_numeric($product_id) || $product_id <= 0 ||
+        if (
+            !is_numeric($product_id) || $product_id <= 0 ||
             !is_numeric($product_cat) || $product_cat <= 0 ||
             !is_numeric($product_brand) || $product_brand <= 0 ||
             empty(trim($product_title)) ||
-            !is_numeric($product_price) || $product_price < 0) {
+            !is_numeric($product_price) || $product_price < 0
+        ) {
             return false;
         }
-        
+
         // Sanitize inputs
         $product_title = trim($product_title);
         $product_desc = trim($product_desc);
         $product_keywords = trim($product_keywords);
-        
+
         $product = new Product();
-        $result = $product->updateProduct($product_id, $product_cat, $product_brand, $product_title, 
-                                         $product_price, $product_desc, $product_image, $product_keywords);
-        
+        $result = $product->updateProduct(
+            $product_id,
+            $product_cat,
+            $product_brand,
+            $product_title,
+            $product_price,
+            $product_desc,
+            $product_image,
+            $product_keywords
+        );
+
         error_log("Update product attempt - ID: " . $product_id . ", Title: " . $product_title . " - Result: " . ($result ? 'Success' : 'Failed'));
-        
+
         return $result;
     } catch (Exception $e) {
         error_log("Update product exception: " . $e->getMessage());
@@ -179,12 +211,12 @@ function delete_product_ctr($product_id)
         if (!is_numeric($product_id) || $product_id <= 0) {
             return false;
         }
-        
+
         $product = new Product();
         $result = $product->deleteProduct($product_id);
-        
+
         error_log("Delete product attempt - ID: " . $product_id . " - Result: " . ($result ? 'Success' : 'Failed'));
-        
+
         return $result;
     } catch (Exception $e) {
         error_log("Delete product exception: " . $e->getMessage());
@@ -203,7 +235,7 @@ function search_products_ctr($search_term)
         if (empty(trim($search_term))) {
             return get_all_products_ctr();
         }
-        
+
         $product = new Product();
         return $product->searchProducts(trim($search_term));
     } catch (Exception $e) {
@@ -220,40 +252,40 @@ function search_products_ctr($search_term)
 function validate_product_ctr($data)
 {
     $result = ['valid' => false, 'message' => ''];
-    
+
     // Check required fields
     if (empty($data['product_title']) || empty(trim($data['product_title']))) {
         $result['message'] = 'Product title is required';
         return $result;
     }
-    
+
     if (empty($data['product_cat']) || !is_numeric($data['product_cat']) || $data['product_cat'] <= 0) {
         $result['message'] = 'Valid category is required';
         return $result;
     }
-    
+
     if (empty($data['product_brand']) || !is_numeric($data['product_brand']) || $data['product_brand'] <= 0) {
         $result['message'] = 'Valid brand is required';
         return $result;
     }
-    
+
     if (empty($data['product_price']) || !is_numeric($data['product_price']) || $data['product_price'] < 0) {
         $result['message'] = 'Valid price is required (must be 0 or greater)';
         return $result;
     }
-    
+
     // Check title length
     $title = trim($data['product_title']);
     if (strlen($title) < 3) {
         $result['message'] = 'Product title must be at least 3 characters long';
         return $result;
     }
-    
+
     if (strlen($title) > 200) {
         $result['message'] = 'Product title must be less than 200 characters';
         return $result;
     }
-    
+
     // Check description length
     if (!empty($data['product_desc'])) {
         if (strlen($data['product_desc']) > 500) {
@@ -261,7 +293,7 @@ function validate_product_ctr($data)
             return $result;
         }
     }
-    
+
     $result['valid'] = true;
     $result['message'] = 'Product data is valid';
     return $result;
@@ -315,7 +347,7 @@ function view_single_product_ctr($product_id)
         if (!is_numeric($product_id) || $product_id <= 0) {
             return false;
         }
-        
+
         $product = new Product();
         return $product->viewSingleProduct($product_id);
     } catch (Exception $e) {
@@ -336,7 +368,7 @@ function search_products_advanced_ctr($search_query)
         if (empty(trim($search_query))) {
             return view_all_products_ctr();
         }
-        
+
         $product = new Product();
         return $product->searchProductsAdvanced(trim($search_query));
     } catch (Exception $e) {
@@ -357,7 +389,7 @@ function filter_products_by_category_ctr($cat_id)
         if (!is_numeric($cat_id) || $cat_id <= 0) {
             return false;
         }
-        
+
         $product = new Product();
         return $product->filterProductsByCategory($cat_id);
     } catch (Exception $e) {
@@ -378,7 +410,7 @@ function filter_products_by_brand_ctr($brand_id)
         if (!is_numeric($brand_id) || $brand_id <= 0) {
             return false;
         }
-        
+
         $product = new Product();
         return $product->filterProductsByBrand($brand_id);
     } catch (Exception $e) {
@@ -400,7 +432,7 @@ function filter_products_by_price_ctr($min_price, $max_price)
         if (!is_numeric($min_price) || !is_numeric($max_price) || $min_price < 0 || $max_price < $min_price) {
             return false;
         }
-        
+
         $product = new Product();
         return $product->filterProductsByPriceRange($min_price, $max_price);
     } catch (Exception $e) {
@@ -424,7 +456,20 @@ function get_featured_products_ctr($limit = 8)
         error_log("Get featured products exception: " . $e->getMessage());
         return false;
     }
+
+    /**
+     * Get count of products added today
+     * @return int Count of products added today
+     */
+    function get_products_added_today_ctr()
+    {
+        try {
+            $product = new Product();
+            return $product->getProductsAddedTodayCount();
+        } catch (Exception $e) {
+            error_log("Get products added today exception: " . $e->getMessage());
+            return 0;
+        }
+    }
 }
 ?>
-
-

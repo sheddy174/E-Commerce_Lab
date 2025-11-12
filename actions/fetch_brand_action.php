@@ -36,6 +36,7 @@ try {
         $response['message'] = 'Brands retrieved successfully';
         $response['data'] = $brands;
         $response['count'] = count($brands);
+        $response['added_today'] = get_brands_added_today_ctr(); // ADD THIS LINE
         
         error_log("Brands fetched successfully - Count: " . count($brands) . ", User: " . get_user_email());
     } else {

@@ -4,15 +4,15 @@
  * FIXED: Image paths for shared server with uploads/ at web root
  */
 
-$(document).ready(function() {
+$(document).ready(function () {
     // Initialize DataTable
     let productsTable;
-    
+
     // Load initial data
     loadCategories();
     loadBrands();
     loadProducts();
-    
+
     /**
      * Load categories for dropdown menus
      */
@@ -21,35 +21,35 @@ $(document).ready(function() {
             url: '../actions/fetch_categories_for_dropdown.php',
             type: 'GET',
             dataType: 'json',
-            success: function(response) {
+            success: function (response) {
                 if (response.status === 'success' && response.data.length > 0) {
                     populateCategoryDropdowns(response.data);
                     $('#totalCategories').text(response.data.length);
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('Error loading categories:', error);
             }
         });
     }
-    
+
     /**
      * Populate category dropdown menus
      */
     function populateCategoryDropdowns(categories) {
         const addDropdown = $('#addProductCategory');
         const editDropdown = $('#editProductCategory');
-        
+
         addDropdown.find('option:not(:first)').remove();
         editDropdown.find('option:not(:first)').remove();
-        
-        categories.forEach(function(category) {
+
+        categories.forEach(function (category) {
             const option = `<option value="${category.cat_id}">${escapeHtml(category.cat_name)}</option>`;
             addDropdown.append(option);
             editDropdown.append(option);
         });
     }
-    
+
     /**
      * Load brands for dropdown menus
      */
@@ -58,57 +58,61 @@ $(document).ready(function() {
             url: '../actions/fetch_brand_action.php',
             type: 'GET',
             dataType: 'json',
-            success: function(response) {
+            success: function (response) {
                 if (response.status === 'success' && response.data.length > 0) {
                     populateBrandDropdowns(response.data);
                     $('#totalBrands').text(response.data.length);
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('Error loading brands:', error);
             }
         });
     }
-    
+
     /**
      * Populate brand dropdown menus
      */
     function populateBrandDropdowns(brands) {
         const addDropdown = $('#addProductBrand');
         const editDropdown = $('#editProductBrand');
-        
+
         addDropdown.find('option:not(:first)').remove();
         editDropdown.find('option:not(:first)').remove();
-        
-        brands.forEach(function(brand) {
+
+        brands.forEach(function (brand) {
             const option = `<option value="${brand.brand_id}">${escapeHtml(brand.brand_name)} (${escapeHtml(brand.cat_name)})</option>`;
             addDropdown.append(option);
             editDropdown.append(option);
         });
     }
-    
+
     /**
      * Load all products from server
      */
     function loadProducts() {
         showLoading(true);
-        
+
         $.ajax({
             url: '../actions/fetch_product_action.php',
             type: 'GET',
             dataType: 'json',
-            success: function(response) {
+            success: function (response) {
                 showLoading(false);
-                
+
                 if (response.status === 'success') {
                     populateTable(response.data);
                     updateStats(response.data);
+                    // Update "Added Today" stat if available
+                    if (response.added_today !== undefined) {
+                        $('#todayAdded').text(response.added_today);
+                    }
                 } else {
                     showAlert('error', 'Failed to load products: ' + response.message);
                     populateTable([]);
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 showLoading(false);
                 console.error('AJAX Error:', error);
                 showAlert('error', 'Error loading products. Please refresh the page.');
@@ -116,7 +120,7 @@ $(document).ready(function() {
             }
         });
     }
-    
+
     /**
      * Populate the products table
      */
@@ -124,10 +128,10 @@ $(document).ready(function() {
         if (productsTable) {
             productsTable.destroy();
         }
-        
+
         const tableBody = $('#productsTable tbody');
         tableBody.empty();
-        
+
         if (products.length === 0) {
             tableBody.append(`
                 <tr>
@@ -140,17 +144,17 @@ $(document).ready(function() {
             $('#tableContainer').show();
             return;
         }
-        
-        products.forEach(function(product) {
+
+        products.forEach(function (product) {
             // FIXED: Image path construction for shared server
             // Database stores: uploads/u40/p6/image.png
             // From admin/product.php, we need to go up to web root: ../../uploads/...
-            const imageUrl = product.product_image 
-                ? '../../' + product.product_image 
+            const imageUrl = product.product_image
+                ? '../../' + product.product_image
                 : 'https://placehold.co/200x200/E3F2FD/2E86AB?text=No+Image';
-            
+
             const price = parseFloat(product.product_price).toFixed(2);
-            
+
             const row = `
                 <tr>
                     <td>${product.product_id}</td>
@@ -192,7 +196,7 @@ $(document).ready(function() {
             `;
             tableBody.append(row);
         });
-        
+
         productsTable = $('#productsTable').DataTable({
             pageLength: 10,
             responsive: true,
@@ -206,21 +210,21 @@ $(document).ready(function() {
             ],
             order: [[0, 'desc']]
         });
-        
+
         $('#tableContainer').show();
     }
-    
+
     /**
      * Update statistics cards
      */
     function updateStats(products) {
         const totalProducts = products.length;
         const totalValue = products.reduce((sum, product) => sum + parseFloat(product.product_price), 0);
-        
+
         $('#totalProducts').text(totalProducts);
         $('#totalValue').text('GHS ' + totalValue.toFixed(2));
     }
-    
+
     /**
      * Show/hide loading spinner
      */
@@ -232,15 +236,15 @@ $(document).ready(function() {
             $('#loadingSpinner').hide();
         }
     }
-    
+
     /**
      * Show alert message
      */
     function showAlert(type, message) {
-        const alertClass = type === 'success' ? 'alert-success' : 
-                          type === 'error' ? 'alert-danger' : 'alert-warning';
+        const alertClass = type === 'success' ? 'alert-success' :
+            type === 'error' ? 'alert-danger' : 'alert-warning';
         const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
-        
+
         const alertHtml = `
             <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
                 <i class="fas ${icon} me-2"></i>
@@ -248,12 +252,12 @@ $(document).ready(function() {
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         `;
-        
+
         $('#alertContainer').html(alertHtml);
         setTimeout(() => $('.alert').alert('close'), 5000);
         $('html, body').animate({ scrollTop: 0 }, 500);
     }
-    
+
     /**
      * Escape HTML to prevent XSS
      */
@@ -268,80 +272,80 @@ $(document).ready(function() {
         };
         return text.toString().replace(/[&<>"']/g, m => map[m]);
     }
-    
+
     /**
      * Validate product data
      */
     function validateProduct(data) {
         const errors = [];
-        
+
         if (!data.product_title || data.product_title.trim().length < 3) {
             errors.push('Product title must be at least 3 characters');
         }
-        
+
         if (!data.product_cat || data.product_cat <= 0) {
             errors.push('Please select a category');
         }
-        
+
         if (!data.product_brand || data.product_brand <= 0) {
             errors.push('Please select a brand');
         }
-        
+
         if (!data.product_price || data.product_price < 0) {
             errors.push('Please enter a valid price');
         }
-        
+
         return {
             isValid: errors.length === 0,
             errors: errors
         };
     }
-    
+
     /**
      * Validate image file before upload
      */
     function validateImageFile(file) {
         const errors = [];
-        
+
         if (!file) {
             return { isValid: true, errors: [] }; // No file is okay
         }
-        
+
         // Check file size (5MB max)
         const maxSize = 5 * 1024 * 1024; // 5MB in bytes
         if (file.size > maxSize) {
             errors.push('Image file is too large. Maximum size is 5MB');
         }
-        
+
         // Check file type
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
         if (!allowedTypes.includes(file.type.toLowerCase())) {
             errors.push('Invalid file type. Allowed: JPG, PNG, GIF, WEBP');
         }
-        
+
         return {
             isValid: errors.length === 0,
             errors: errors
         };
     }
-    
+
     // Image preview handlers
-    $('#addProductImage').change(function() {
+    $('#addProductImage').change(function () {
         previewImage(this, '#addImagePreview', '#addFileName');
     });
-    
-    $('#editProductImage').change(function() {
+
+    $('#editProductImage').change(function () {
         previewImage(this, '#editImagePreview', '#editFileName');
     });
-    
+
     function previewImage(input, previewSelector, fileNameSelector) {
         const file = input.files[0];
-        
+
         if (file) {
             $(fileNameSelector).text(file.name);
-            
+
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 $(previewSelector).attr('src', e.target.result).show();
             };
             reader.readAsDataURL(file);
@@ -350,13 +354,13 @@ $(document).ready(function() {
             $(previewSelector).hide();
         }
     }
-    
+
     // Add Product Form Submission
-    $('#addProductForm').submit(function(e) {
+    $('#addProductForm').submit(function (e) {
         e.preventDefault();
-        
+
         const formData = new FormData(this);
-        
+
         // Debug: Log form data
         console.log('Submitting product with data:');
         for (let pair of formData.entries()) {
@@ -366,7 +370,7 @@ $(document).ready(function() {
                 console.log(pair[0] + ': ' + pair[1]);
             }
         }
-        
+
         // Client-side validation
         const validation = validateProduct({
             product_title: formData.get('product_title'),
@@ -374,12 +378,12 @@ $(document).ready(function() {
             product_brand: formData.get('product_brand'),
             product_price: formData.get('product_price')
         });
-        
+
         if (!validation.isValid) {
             showAlert('error', validation.errors.join('. '));
             return;
         }
-        
+
         // Check if image file is selected
         const imageFile = $('#addProductImage')[0].files[0];
         if (imageFile) {
@@ -387,11 +391,11 @@ $(document).ready(function() {
         } else {
             console.log('No image file selected');
         }
-        
+
         const submitBtn = $(this).find('button[type="submit"]');
         const originalText = submitBtn.html();
         submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Adding...');
-        
+
         $.ajax({
             url: '../actions/add_product_action.php',
             type: 'POST',
@@ -400,43 +404,43 @@ $(document).ready(function() {
             contentType: false,  // Important for FormData
             cache: false,        // Don't cache the request
             dataType: 'json',
-            success: function(response) {
+            success: function (response) {
                 console.log('Server response:', response);
                 submitBtn.prop('disabled', false).html(originalText);
-                
+
                 if (response.status === 'success') {
                     $('#addProductModal').modal('hide');
                     $('#addProductForm')[0].reset();
                     $('#addImagePreview').hide();
                     $('#addFileName').text('No file chosen');
                     showAlert('success', response.message);
-                    
+
                     // Show debug info if image upload failed but product was added
                     if (response.debug) {
                         console.warn('Image upload debug info:', response.debug);
                     }
-                    
+
                     loadProducts();
                 } else {
                     console.error('Product add failed:', response.message);
                     showAlert('error', response.message);
-                    
+
                     // Show debug info if available
                     if (response.debug) {
                         console.error('Debug info:', response.debug);
                     }
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('AJAX Error:', {
                     status: status,
                     error: error,
                     responseText: xhr.responseText,
                     statusCode: xhr.status
                 });
-                
+
                 submitBtn.prop('disabled', false).html(originalText);
-                
+
                 // Try to parse error response
                 let errorMessage = 'Error adding product. Please try again.';
                 try {
@@ -452,22 +456,22 @@ $(document).ready(function() {
                         errorMessage = 'Server error. Check your error logs for details.';
                     }
                 }
-                
+
                 showAlert('error', errorMessage);
             }
         });
     });
-    
+
     // Edit Product Button Click
-    $(document).on('click', '.edit-btn', function() {
+    $(document).on('click', '.edit-btn', function () {
         const productId = $(this).data('id');
-        
+
         // Fetch product details
         $.ajax({
             url: '../actions/fetch_product_action.php',
             type: 'GET',
             dataType: 'json',
-            success: function(response) {
+            success: function (response) {
                 if (response.status === 'success') {
                     const product = response.data.find(p => p.product_id == productId);
                     if (product) {
@@ -478,7 +482,7 @@ $(document).ready(function() {
             }
         });
     });
-    
+
     function populateEditForm(product) {
         $('#editProductId').val(product.product_id);
         $('#editProductTitle').val(product.product_title);
@@ -487,23 +491,23 @@ $(document).ready(function() {
         $('#editProductPrice').val(parseFloat(product.product_price).toFixed(2));
         $('#editProductDesc').val(product.product_desc);
         $('#editProductKeywords').val(product.product_keywords);
-        
+
         // FIXED: Image path for display in edit modal
-        const imageUrl = product.product_image 
-            ? '../../' + product.product_image 
+        const imageUrl = product.product_image
+            ? '../../' + product.product_image
             : 'https://placehold.co/200x200/E3F2FD/2E86AB?text=No+Image';
-        
+
         $('#editCurrentImage').attr('src', imageUrl);
         $('#editImagePreview').hide();
         $('#editFileName').text('No file chosen');
     }
-    
+
     // Edit Product Form Submission
-    $('#editProductForm').submit(function(e) {
+    $('#editProductForm').submit(function (e) {
         e.preventDefault();
-        
+
         const formData = new FormData(this);
-        
+
         // Debug: Log form data
         console.log('Updating product with data:');
         for (let pair of formData.entries()) {
@@ -513,19 +517,19 @@ $(document).ready(function() {
                 console.log(pair[0] + ': ' + pair[1]);
             }
         }
-        
+
         const validation = validateProduct({
             product_title: formData.get('product_title'),
             product_cat: formData.get('product_cat'),
             product_brand: formData.get('product_brand'),
             product_price: formData.get('product_price')
         });
-        
+
         if (!validation.isValid) {
             showAlert('error', validation.errors.join('. '));
             return;
         }
-        
+
         // Check if new image file is selected
         const imageFile = $('#editProductImage')[0].files[0];
         if (imageFile) {
@@ -533,11 +537,11 @@ $(document).ready(function() {
         } else {
             console.log('No new image file selected (keeping existing image)');
         }
-        
+
         const submitBtn = $(this).find('button[type="submit"]');
         const originalText = submitBtn.html();
         submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Updating...');
-        
+
         $.ajax({
             url: '../actions/update_product_action.php',
             type: 'POST',
@@ -546,10 +550,10 @@ $(document).ready(function() {
             contentType: false,
             cache: false,
             dataType: 'json',
-            success: function(response) {
+            success: function (response) {
                 console.log('Update response:', response);
                 submitBtn.prop('disabled', false).html(originalText);
-                
+
                 if (response.status === 'success') {
                     $('#editProductModal').modal('hide');
                     showAlert('success', response.message);
@@ -559,16 +563,16 @@ $(document).ready(function() {
                     showAlert('error', response.message);
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('AJAX Error:', {
                     status: status,
                     error: error,
                     responseText: xhr.responseText,
                     statusCode: xhr.status
                 });
-                
+
                 submitBtn.prop('disabled', false).html(originalText);
-                
+
                 // Try to parse error response
                 let errorMessage = 'Error updating product. Please try again.';
                 try {
@@ -583,17 +587,17 @@ $(document).ready(function() {
                         errorMessage = 'Server error. Check your error logs for details.';
                     }
                 }
-                
+
                 showAlert('error', errorMessage);
             }
         });
     });
-    
+
     // Delete Product Button Click
-    $(document).on('click', '.delete-btn', function() {
+    $(document).on('click', '.delete-btn', function () {
         const productId = $(this).data('id');
         const productTitle = $(this).data('title');
-        
+
         Swal.fire({
             title: 'Are you sure?',
             html: `You are about to delete "<strong>${productTitle}</strong>".<br>This action cannot be undone.`,
@@ -609,14 +613,14 @@ $(document).ready(function() {
             }
         });
     });
-    
+
     function deleteProduct(productId) {
         $.ajax({
             url: '../actions/delete_product_action.php',
             type: 'POST',
             data: { product_id: productId },
             dataType: 'json',
-            success: function(response) {
+            success: function (response) {
                 if (response.status === 'success') {
                     showAlert('success', response.message);
                     loadProducts();
@@ -624,21 +628,21 @@ $(document).ready(function() {
                     showAlert('error', response.message);
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('AJAX Error:', error);
                 showAlert('error', 'Error deleting product. Please try again.');
             }
         });
     }
-    
+
     // Clear forms when modals close
-    $('#addProductModal').on('hidden.bs.modal', function() {
+    $('#addProductModal').on('hidden.bs.modal', function () {
         $('#addProductForm')[0].reset();
         $('#addImagePreview').hide();
         $('#addFileName').text('No file chosen');
     });
-    
-    $('#editProductModal').on('hidden.bs.modal', function() {
+
+    $('#editProductModal').on('hidden.bs.modal', function () {
         $('#editProductForm')[0].reset();
         $('#editImagePreview').hide();
         $('#editFileName').text('No file chosen');

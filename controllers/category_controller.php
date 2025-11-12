@@ -18,15 +18,15 @@ function add_category_ctr($cat_name)
         if (empty(trim($cat_name))) {
             return false;
         }
-        
+
         // Sanitize input
         $cat_name = trim($cat_name);
-        
+
         $category = new Category();
         $result = $category->addCategory($cat_name);
-        
+
         error_log("Add category attempt: " . $cat_name . " - Result: " . ($result ? 'Success (ID: ' . $result . ')' : 'Failed'));
-        
+
         return $result;
     } catch (Exception $e) {
         error_log("Add category exception: " . $e->getMessage());
@@ -75,7 +75,7 @@ function get_category_by_id_ctr($cat_id)
         if (!is_numeric($cat_id) || $cat_id <= 0) {
             return false;
         }
-        
+
         $category = new Category();
         return $category->getCategoryById($cat_id);
     } catch (Exception $e) {
@@ -95,7 +95,7 @@ function get_category_by_name_ctr($cat_name)
         if (empty(trim($cat_name))) {
             return false;
         }
-        
+
         $category = new Category();
         return $category->getCategoryByName(trim($cat_name));
     } catch (Exception $e) {
@@ -117,15 +117,15 @@ function update_category_ctr($cat_id, $cat_name)
         if (!is_numeric($cat_id) || $cat_id <= 0 || empty(trim($cat_name))) {
             return false;
         }
-        
+
         // Sanitize input
         $cat_name = trim($cat_name);
-        
+
         $category = new Category();
         $result = $category->updateCategory($cat_id, $cat_name);
-        
+
         error_log("Update category attempt - ID: " . $cat_id . ", Name: " . $cat_name . " - Result: " . ($result ? 'Success' : 'Failed'));
-        
+
         return $result;
     } catch (Exception $e) {
         error_log("Update category exception: " . $e->getMessage());
@@ -144,12 +144,12 @@ function delete_category_ctr($cat_id)
         if (!is_numeric($cat_id) || $cat_id <= 0) {
             return false;
         }
-        
+
         $category = new Category();
         $result = $category->deleteCategory($cat_id);
-        
+
         error_log("Delete category attempt - ID: " . $cat_id . " - Result: " . ($result ? 'Success' : 'Failed'));
-        
+
         return $result;
     } catch (Exception $e) {
         error_log("Delete category exception: " . $e->getMessage());
@@ -168,12 +168,12 @@ function category_exists_ctr($cat_name)
         if (empty(trim($cat_name))) {
             return false;
         }
-        
+
         $category = new Category();
         $exists = $category->categoryExists(trim($cat_name));
-        
+
         error_log("Category exists check for: " . $cat_name . " - Result: " . ($exists ? 'EXISTS' : 'AVAILABLE'));
-        
+
         return $exists;
     } catch (Exception $e) {
         error_log("Category exists check exception: " . $e->getMessage());
@@ -192,7 +192,7 @@ function search_categories_ctr($search_term)
         if (empty(trim($search_term))) {
             return get_all_categories_ctr();
         }
-        
+
         $category = new Category();
         return $category->searchCategories(trim($search_term));
     } catch (Exception $e) {
@@ -209,39 +209,54 @@ function search_categories_ctr($search_term)
 function validate_category_name_ctr($cat_name)
 {
     $result = ['valid' => false, 'message' => ''];
-    
+
     // Check if empty
     if (empty(trim($cat_name))) {
         $result['message'] = 'Category name is required';
         return $result;
     }
-    
+
     // Check length
     $cat_name = trim($cat_name);
     if (strlen($cat_name) < 2) {
         $result['message'] = 'Category name must be at least 2 characters long';
         return $result;
     }
-    
+
     if (strlen($cat_name) > 100) {
         $result['message'] = 'Category name must be less than 100 characters';
         return $result;
     }
-    
+
     // Check for valid characters (letters, numbers, spaces, hyphens, underscores)
     if (!preg_match('/^[a-zA-Z0-9\s\-_]+$/', $cat_name)) {
         $result['message'] = 'Category name can only contain letters, numbers, spaces, hyphens, and underscores';
         return $result;
     }
-    
+
     // Check if category name already exists
     if (category_exists_ctr($cat_name)) {
         $result['message'] = 'Category name already exists';
         return $result;
     }
-    
+
     $result['valid'] = true;
     $result['message'] = 'Category name is valid';
     return $result;
+
+    /**
+     * Get count of categories added today
+     * @return int Count of categories added today
+     */
+    function get_categories_added_today_ctr()
+    {
+        try {
+            $category = new Category();
+            return $category->getCategoriesAddedTodayCount();
+        } catch (Exception $e) {
+            error_log("Get categories added today exception: " . $e->getMessage());
+            return 0;
+        }
+    }
 }
 ?>

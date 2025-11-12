@@ -265,5 +265,32 @@ class Category extends db_connection
         $stmt->close();
         return $categories;
     }
+
+    /**
+     * Get count of categories added today
+     * @return int Count of categories added today
+     */
+    public function getCategoriesAddedTodayCount()
+    {
+        $today_start = date('Y-m-d 00:00:00');
+        $today_end = date('Y-m-d 23:59:59');
+        
+        $stmt = $this->db->prepare("
+            SELECT COUNT(*) as today_count 
+            FROM categories 
+            WHERE created_at BETWEEN ? AND ?
+        ");
+        
+        if (!$stmt) {
+            return 0;
+        }
+
+        $stmt->bind_param("ss", $today_start, $today_end);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        
+        return $result ? (int)$result['today_count'] : 0;
+    }
 }
 ?>

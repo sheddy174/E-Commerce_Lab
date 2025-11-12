@@ -560,5 +560,32 @@ class Product extends db_connection
         $stmt->close();
         return $products;
     }
+
+    /**
+     * Get count of products added today
+     * @return int Count of products added today
+     */
+    public function getProductsAddedTodayCount()
+    {
+        $today_start = date('Y-m-d 00:00:00');
+        $today_end = date('Y-m-d 23:59:59');
+        
+        $stmt = $this->db->prepare("
+            SELECT COUNT(*) as today_count 
+            FROM products 
+            WHERE created_at BETWEEN ? AND ?
+        ");
+        
+        if (!$stmt) {
+            return 0;
+        }
+
+        $stmt->bind_param("ss", $today_start, $today_end);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        
+        return $result ? (int)$result['today_count'] : 0;
+    }
 }
 ?>

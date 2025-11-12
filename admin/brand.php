@@ -21,18 +21,19 @@ if (!is_admin()) {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Brand Management - GhanaTunes Admin</title>
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- DataTables CSS -->
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-    
+
     <style>
         :root {
             --primary-color: #2E86AB;
@@ -43,14 +44,23 @@ if (!is_admin()) {
             --danger-color: #dc3545;
             --warning-color: #ffc107;
         }
-        
+
         body {
             background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
             background-attachment: fixed;
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
+
+        /* .admin-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 0.5rem 1rem rgba(46, 134, 171, 0.3);
+        } */
+
+        /* Fix breadcrumb and navigation styling */
         .admin-header {
             background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
             color: white;
@@ -58,7 +68,45 @@ if (!is_admin()) {
             margin-bottom: 2rem;
             box-shadow: 0 0.5rem 1rem rgba(46, 134, 171, 0.3);
         }
-        
+
+        .admin-header .btn-outline-light {
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .admin-header .btn-outline-light:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: white;
+            color: white;
+        }
+
+        .admin-header .btn-outline-light.active {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: white;
+            color: white;
+            font-weight: 600;
+        }
+
+        .admin-header .btn-light {
+            background: white;
+            color: var(--primary-color);
+            font-weight: 600;
+            border: none;
+        }
+
+        .admin-header .btn-light:hover {
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--primary-hover);
+        }
+
+        /* Remove any conflicting breadcrumb styles */
+        .breadcrumb {
+            background: none !important;
+            padding: 0;
+            margin: 0;
+        }
+
         .card {
             border: none;
             border-radius: 1rem;
@@ -66,65 +114,66 @@ if (!is_admin()) {
             background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(10px);
         }
-        
+
         .card-header {
             background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
             color: white;
             border-radius: 1rem 1rem 0 0 !important;
             padding: 1.25rem;
         }
-        
+
         .btn-primary {
             background: var(--primary-color);
             border-color: var(--primary-color);
         }
-        
+
         .btn-primary:hover {
             background: var(--primary-hover);
             border-color: var(--primary-hover);
         }
-        
+
         .btn-outline-primary {
             color: var(--primary-color);
             border-color: var(--primary-color);
         }
-        
+
         .btn-outline-primary:hover {
             background: var(--primary-color);
             border-color: var(--primary-color);
         }
-        
+
         .table {
             border-radius: 0.5rem;
             overflow: hidden;
         }
-        
+
         .table thead th {
             background: var(--primary-color);
             color: white;
             border: none;
             font-weight: 600;
         }
-        
+
         .modal-header {
             background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
             color: white;
         }
-        
-        .form-control:focus, .form-select:focus {
+
+        .form-control:focus,
+        .form-select:focus {
             border-color: var(--primary-color);
             box-shadow: 0 0 0 0.2rem rgba(46, 134, 171, 0.25);
         }
-        
+
         .alert {
             border-radius: 0.75rem;
             border: none;
         }
-        
+
         .badge {
             font-size: 0.875em;
         }
-        
+
         .stats-card {
             background: linear-gradient(135deg, rgba(46, 134, 171, 0.1), rgba(27, 94, 122, 0.1));
             border: 2px solid var(--primary-color);
@@ -133,17 +182,17 @@ if (!is_admin()) {
             text-align: center;
             transition: all 0.3s ease;
         }
-        
+
         .stats-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 1rem 2rem rgba(46, 134, 171, 0.2);
         }
-        
+
         .breadcrumb {
             background: rgba(255, 255, 255, 0.8);
             border-radius: 0.5rem;
         }
-        
+
         .loading-spinner {
             display: none;
             text-align: center;
@@ -156,9 +205,10 @@ if (!is_admin()) {
         }
     </style>
 </head>
+
 <body>
     <!-- Admin Header -->
-    <div class="admin-header">
+    <!-- <div class="admin-header">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-6">
@@ -183,6 +233,45 @@ if (!is_admin()) {
                             <li class="breadcrumb-item active text-white-50">Brands</li>
                         </ol>
                     </nav>
+                </div>
+            </div>
+        </div>
+    </div> -->
+
+    <!-- Admin Header -->
+    <div class="admin-header">
+        <div class="container">
+            <div class="row align-items-center mb-3">
+                <div class="col-md-6">
+                    <a href="../index.php" class="text-white text-decoration-none d-flex align-items-center">
+                        <i class="fas fa-guitar fa-2x me-3"></i>
+                        <div>
+                            <h2 class="mb-0" style="font-size: 1.8rem; font-weight: 700;">GhanaTunes</h2>
+                            <p class="mb-0" style="font-size: 0.9rem; opacity: 0.9;">Admin Dashboard</p>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="../index.php" class="btn btn-light me-2">
+                        <i class="fas fa-home me-2"></i>Home
+                    </a>
+                    <a href="category.php" class="btn btn-outline-light me-2">
+                        <i class="fas fa-list me-2"></i>Categories
+                    </a>
+                    <a href="brand.php" class="btn btn-outline-light me-2 active" style="background: rgba(255,255,255,0.2);">
+                        <i class="fas fa-tags me-2"></i>Brands
+                    </a>
+                    <a href="product.php" class="btn btn-outline-light">
+                        <i class="fas fa-box-open me-2"></i>Products
+                    </a>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <h1 class="mb-0" style="font-size: 2rem; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 1rem;">
+                        <i class="fas fa-tags me-3"></i>Brand Management
+                    </h1>
+                    <p class="mb-0 mt-2 opacity-75">Manage instrument brands by category</p>
                 </div>
             </div>
         </div>
@@ -286,10 +375,10 @@ if (!is_admin()) {
                             <label for="addBrandCategory" class="form-label">
                                 <i class="fas fa-list me-2"></i>Category
                             </label>
-                            <select class="form-select" 
-                                    id="addBrandCategory" 
-                                    name="brand_cat"
-                                    required>
+                            <select class="form-select"
+                                id="addBrandCategory"
+                                name="brand_cat"
+                                required>
                                 <option value="">Select a category</option>
                                 <!-- Options populated by JavaScript -->
                             </select>
@@ -297,18 +386,18 @@ if (!is_admin()) {
                                 Select the category this brand belongs to
                             </div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="addBrandName" class="form-label">
                                 <i class="fas fa-tag me-2"></i>Brand Name
                             </label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="addBrandName" 
-                                   name="brand_name"
-                                   placeholder="Enter brand name"
-                                   maxlength="100"
-                                   required>
+                            <input type="text"
+                                class="form-control"
+                                id="addBrandName"
+                                name="brand_name"
+                                placeholder="Enter brand name"
+                                maxlength="100"
+                                required>
                             <div class="form-text">
                                 Brand name must be unique within the selected category (2-100 characters)
                             </div>
@@ -340,15 +429,15 @@ if (!is_admin()) {
                 <form id="editBrandForm">
                     <div class="modal-body">
                         <input type="hidden" id="editBrandId" name="brand_id">
-                        
+
                         <div class="mb-3">
                             <label for="editBrandCategory" class="form-label">
                                 <i class="fas fa-list me-2"></i>Category
                             </label>
-                            <select class="form-select" 
-                                    id="editBrandCategory" 
-                                    name="brand_cat"
-                                    required>
+                            <select class="form-select"
+                                id="editBrandCategory"
+                                name="brand_cat"
+                                required>
                                 <option value="">Select a category</option>
                                 <!-- Options populated by JavaScript -->
                             </select>
@@ -356,18 +445,18 @@ if (!is_admin()) {
                                 Select the category this brand belongs to
                             </div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="editBrandName" class="form-label">
                                 <i class="fas fa-tag me-2"></i>Brand Name
                             </label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="editBrandName" 
-                                   name="brand_name"
-                                   placeholder="Enter brand name"
-                                   maxlength="100"
-                                   required>
+                            <input type="text"
+                                class="form-control"
+                                id="editBrandName"
+                                name="brand_name"
+                                placeholder="Enter brand name"
+                                maxlength="100"
+                                required>
                             <div class="form-text">
                                 Brand name must be unique within the selected category (2-100 characters)
                             </div>
@@ -401,7 +490,7 @@ if (!is_admin()) {
                         <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
                         <h5>Are you sure?</h5>
                         <p class="text-muted">
-                            You are about to delete the brand "<strong id="deleteBrandName"></strong>" 
+                            You are about to delete the brand "<strong id="deleteBrandName"></strong>"
                             from category "<strong id="deleteBrandCategory"></strong>".
                             This action cannot be undone.
                         </p>
@@ -432,4 +521,5 @@ if (!is_admin()) {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../js/brand.js"></script>
 </body>
+
 </html>
