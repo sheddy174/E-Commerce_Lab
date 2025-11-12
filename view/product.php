@@ -191,9 +191,18 @@ if ($products === false) {
                                     GHS <?php echo number_format($product['product_price'], 2); ?>
                                 </div>
                                 
-                                <button class="btn btn-primary w-100">
-                                    <i class="fas fa-shopping-cart me-2"></i>Add to Cart
-                                </button>
+                                <?php if (is_logged_in()): ?>
+                                    <!-- User is logged in - show Add to Cart button -->
+                                    <button class="btn btn-primary w-100 add-to-cart-btn" 
+                                            data-product-id="<?php echo $product['product_id']; ?>">
+                                        <i class="fas fa-shopping-cart me-2"></i>Add to Cart
+                                    </button>
+                                <?php else: ?>
+                                    <!-- User not logged in - show Login button -->
+                                    <a href="../login/login.php?redirect=product" class="btn btn-primary w-100">
+                                        <i class="fas fa-sign-in-alt me-2"></i>Login to Buy
+                                    </a>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -202,7 +211,23 @@ if ($products === false) {
         <?php endif; ?>
     </div>
 
+    <!-- jQuery (required for cart.js) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert2 (required for cart.js alerts) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Cart functionality -->
+    <script src="../js/cart.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Add to cart button click handler
+            $('.add-to-cart-btn').click(function() {
+                const productId = $(this).data('product-id');
+                addToCart(productId, 1);
+            });
+        });
+    </script>
 </body>
 </html>
