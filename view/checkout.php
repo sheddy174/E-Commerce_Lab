@@ -1,7 +1,7 @@
 <?php
 /**
  * Checkout View
- * Order review and simulated payment page
+ * Order review and Paystack payment page
  */
 
 session_start();
@@ -203,6 +203,19 @@ $total = $subtotal + $shipping;
             font-weight: 600;
             color: var(--primary-color);
         }
+        
+        .paystack-badge {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            margin-top: 1rem;
+        }
+        
+        .paystack-badge i {
+            margin-right: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -325,20 +338,30 @@ $total = $subtotal + $shipping;
                     </div>
 
                     <div class="alert alert-info mt-4">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <small>This is a simulated payment for demonstration purposes</small>
+                        <i class="fas fa-credit-card me-2"></i>
+                        <small><strong>Secure Payment via Paystack</strong><br>
+                        Pay with Card or Mobile Money</small>
                     </div>
 
                     <div class="d-grid mt-4">
-                        <button type="button" class="btn btn-payment" id="simulatePaymentBtn">
-                            <i class="fas fa-lock me-2"></i>Simulate Payment
+                        <button type="button" 
+                                class="btn btn-payment" 
+                                id="simulatePaymentBtn"
+                                data-customer-email="<?php echo htmlspecialchars($customer_email); ?>">
+                            <i class="fas fa-lock me-2"></i>Proceed to Payment
                         </button>
+                    </div>
+
+                    <div class="paystack-badge">
+                        <i class="fas fa-shield-alt"></i>
+                        <strong>Powered by Paystack</strong><br>
+                        <small style="opacity: 0.9;">100% Secure & Encrypted</small>
                     </div>
 
                     <div class="text-center mt-3">
                         <small class="text-muted">
-                            <i class="fas fa-shield-alt me-1"></i>
-                            Secure Checkout
+                            <i class="fas fa-lock me-1"></i>
+                            Your payment information is secure
                         </small>
                     </div>
                 </div>
@@ -346,6 +369,7 @@ $total = $subtotal + $shipping;
         </div>
     </div>
 
+    <!-- Required Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

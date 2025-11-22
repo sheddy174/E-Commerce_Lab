@@ -1,20 +1,20 @@
 /**
- * Checkout and Payment Simulation JavaScript
- * Handles payment modal and checkout process via AJAX
+ * Checkout and Paystack Payment JavaScript
+ * Handles real payment via Paystack gateway
  */
 
 $(document).ready(function() {
     
     /**
-     * Simulate Payment Button Click
-     * Shows a modal simulating payment confirmation
+     * Proceed to Payment Button Click
+     * Shows payment modal with Paystack integration
      */
     $('#simulatePaymentBtn').click(function() {
         const totalAmount = $('#orderTotal').text();
         
-        // Show payment simulation modal
+        // Show Paystack payment modal
         Swal.fire({
-            title: '<strong>Simulate Payment</strong>',
+            title: '<strong>Secure Payment</strong>',
             html: `
                 <div style="text-align: left; padding: 1rem;">
                     <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 1rem;">
@@ -27,23 +27,26 @@ $(document).ready(function() {
                         </div>
                         <div style="padding: 0.5rem 0;">
                             <span><strong>Payment Method:</strong></span>
-                            <span> Mobile Money (Simulated)</span>
+                            <span> Paystack (Card, Mobile Money)</span>
                         </div>
                     </div>
                     
-                    <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
-                        <i class="fas fa-info-circle" style="color: #856404;"></i>
-                        <small style="color: #856404;"> This is a <strong>simulated payment</strong> for demonstration purposes. No actual payment will be processed.</small>
+                    <div style="background: linear-gradient(135deg, #2E86AB 0%, #1B5E7A 100%); color: white; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                        <div style="text-align: center;">
+                            <i class="fas fa-lock" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                            <div style="font-size: 18px; letter-spacing: 1px; margin-bottom: 0.5rem;">🔒 Powered by Paystack</div>
+                            <div style="font-size: 12px; opacity: 0.9;">Your payment is 100% secure and encrypted</div>
+                        </div>
                     </div>
                     
                     <p style="text-align: center; margin-top: 1.5rem; color: #6c757d;">
-                        Click "Confirm Payment" to complete your order
+                        Click "Pay Now" to proceed to secure payment gateway
                     </p>
                 </div>
             `,
             icon: null,
             showCancelButton: true,
-            confirmButtonText: '<i class="fas fa-check-circle me-2"></i>Confirm Payment',
+            confirmButtonText: '<i class="fas fa-lock me-2"></i>Pay Now',
             cancelButtonText: '<i class="fas fa-times me-2"></i>Cancel',
             confirmButtonColor: '#F18F01',
             cancelButtonColor: '#6c757d',
@@ -55,26 +58,54 @@ $(document).ready(function() {
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                processCheckout();
+                initializePaystackPayment();
             }
         });
     });
 
     /**
-     * Process Checkout
-     * Sends request to backend to complete the order
+     * Initialize Paystack Payment
      */
-    function processCheckout() {
-        // Show processing indicator
+    function initializePaystackPayment() {
+        // Prompt user for email (clean approach - always works)
         Swal.fire({
-            title: 'Processing Payment...',
+            title: 'Email for Receipt',
+            input: 'email',
+            inputLabel: 'Enter your email address to receive payment confirmation',
+            inputPlaceholder: 'your.email@example.com',
+            showCancelButton: true,
+            confirmButtonText: 'Continue',
+            confirmButtonColor: '#2E86AB',
+            cancelButtonColor: '#6c757d',
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Email is required'
+                }
+                if (!validateEmail(value)) {
+                    return 'Please enter a valid email address'
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                proceedToPaystack(result.value);
+            }
+        });
+    }
+    
+    /**
+     * Proceed to Paystack after email confirmation
+     */
+    function proceedToPaystack(customerEmail) {
+        // Show loading
+        Swal.fire({
+            title: 'Initializing Payment...',
             html: `
                 <div style="padding: 2rem;">
                     <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
                         <span class="visually-hidden">Loading...</span>
                     </div>
                     <p style="margin-top: 1rem; color: #6c757d;">
-                        Please wait while we process your order...
+                        Connecting to Paystack secure gateway...
                     </p>
                 </div>
             `,
@@ -82,103 +113,60 @@ $(document).ready(function() {
             allowEscapeKey: false,
             showConfirmButton: false
         });
-
-        // Send AJAX request to process checkout
+        
+        // Initialize transaction with backend
         $.ajax({
-            url: '../actions/process_checkout_action.php',
+            url: '../actions/paystack_init_transaction.php',
             type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                email: customerEmail
+            }),
             dataType: 'json',
             success: function(response) {
+                console.log('Paystack init response:', response);
+                
                 if (response.status === 'success') {
-                    // Payment successful
+                    // Redirect to Paystack payment page
                     Swal.fire({
                         icon: 'success',
-                        title: 'Order Placed Successfully!',
-                        html: `
-                            <div style="text-align: left; padding: 1rem;">
-                                <div style="background: #d1e7dd; border: 2px solid #0f5132; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 1.5rem;">
-                                    <h5 style="color: #0f5132; margin-bottom: 1rem;">
-                                        <i class="fas fa-check-circle"></i> Payment Confirmed
-                                    </h5>
-                                    <div style="padding: 0.5rem 0;">
-                                        <strong>Order Reference:</strong> #${response.invoice_no}
-                                    </div>
-                                    <div style="padding: 0.5rem 0;">
-                                        <strong>Order Date:</strong> ${response.order_date}
-                                    </div>
-                                    <div style="padding: 0.5rem 0;">
-                                        <strong>Total Paid:</strong> <span style="color: #F18F01; font-weight: 700;">GHS ${response.total_amount}</span>
-                                    </div>
-                                    <div style="padding: 0.5rem 0;">
-                                        <strong>Items:</strong> ${response.items_count} item${response.items_count > 1 ? 's' : ''}
-                                    </div>
-                                </div>
-                                
-                                <div style="background: #cff4fc; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
-                                    <i class="fas fa-envelope" style="color: #055160;"></i>
-                                    <small style="color: #055160;"> A confirmation email has been sent to your registered email address.</small>
-                                </div>
-                                
-                                <p style="text-align: center; color: #6c757d; margin-top: 1rem;">
-                                    Thank you for shopping with GhanaTunes!
-                                </p>
-                            </div>
-                        `,
-                        confirmButtonText: '<i class="fas fa-home me-2"></i>Continue Shopping',
-                        confirmButtonColor: '#2E86AB',
-                        allowOutsideClick: false,
-                        width: '600px'
+                        title: 'Redirecting to Payment...',
+                        text: 'Taking you to Paystack secure gateway',
+                        timer: 1500,
+                        showConfirmButton: false
                     }).then(() => {
-                        // Redirect to home or orders page
-                        window.location.href = '../index.php';
+                        // Redirect to Paystack
+                        window.location.href = response.authorization_url;
                     });
                 } else {
-                    // Payment failed
                     Swal.fire({
                         icon: 'error',
-                        title: 'Payment Failed',
-                        html: `
-                            <div style="padding: 1rem;">
-                                <p style="color: #dc3545; font-weight: 600; margin-bottom: 1rem;">
-                                    ${response.message}
-                                </p>
-                                <p style="color: #6c757d;">
-                                    Your cart items have been preserved. Please try again.
-                                </p>
-                            </div>
-                        `,
-                        confirmButtonText: 'Try Again',
+                        title: 'Initialization Failed',
+                        text: response.message || 'Failed to initialize payment',
                         confirmButtonColor: '#dc3545'
                     });
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Checkout error:', error);
+                console.error('Init error:', error);
                 console.error('Response:', xhr.responseText);
                 
                 Swal.fire({
                     icon: 'error',
-                    title: 'Checkout Failed',
-                    html: `
-                        <div style="padding: 1rem;">
-                            <p style="color: #dc3545; font-weight: 600; margin-bottom: 1rem;">
-                                An error occurred while processing your order.
-                            </p>
-                            <p style="color: #6c757d;">
-                                Please try again or contact support if the problem persists.
-                            </p>
-                            <div style="background: #f8f9fa; padding: 0.75rem; border-radius: 0.5rem; margin-top: 1rem;">
-                                <small style="color: #6c757d; font-family: monospace;">
-                                    Error: ${error}
-                                </small>
-                            </div>
-                        </div>
-                    `,
-                    confirmButtonText: 'Close',
-                    confirmButtonColor: '#6c757d'
+                    title: 'Connection Error',
+                    text: 'Failed to connect to payment gateway. Please try again.',
+                    confirmButtonColor: '#dc3545'
                 });
             }
         });
+    }
+    
+    /**
+     * Validate email address
+     */
+    function validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(String(email).toLowerCase());
     }
 
 });
