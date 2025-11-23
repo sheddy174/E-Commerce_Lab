@@ -24,6 +24,10 @@ $products = $products ?: [];
 $categories = get_all_categories_ctr() ?: [];
 $brands = get_all_brands_ctr() ?: [];
 
+// Get user info if logged in
+$customer_name = is_logged_in() ? get_user_name() : '';
+$cart_count = is_logged_in() ? get_cart_item_count_ctr(get_user_id()) : 0;
+
 // Pagination
 $items_per_page = 12;
 $total_products = count($products);
@@ -57,12 +61,120 @@ $paginated_products = array_slice($products, $offset, $items_per_page);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        .page-header {
+        /* Top Navigation Bar */
+        .top-navbar {
             background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            padding: 1rem 0;
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+        }
+
+        .brand-logo {
             color: white;
-            padding: 2rem 0;
+            font-size: 1.75rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .brand-logo i {
+            color: var(--accent-color);
+        }
+
+        .brand-logo:hover {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .nav-link-custom {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link-custom:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .nav-link-custom.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .search-box {
+            position: relative;
+            max-width: 400px;
+        }
+
+        .search-box input {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            padding: 0.6rem 2.5rem 0.6rem 1rem;
+            border-radius: 2rem;
+            width: 100%;
+        }
+
+        .search-box button {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 2rem;
+        }
+
+        .cart-badge {
+            position: relative;
+        }
+
+        .cart-badge .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        .user-menu {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .user-menu:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        /* Page Header */
+        .page-header {
+            background: white;
+            padding: 1.5rem 0;
             margin-bottom: 2rem;
-            box-shadow: 0 0.5rem 1rem rgba(46, 134, 171, 0.3);
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05);
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0;
         }
 
         .filter-section {
@@ -108,19 +220,6 @@ $paginated_products = array_slice($products, $offset, $items_per_page);
 
         .product-card:hover .product-image {
             transform: scale(1.05);
-        }
-
-        .product-badge {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: var(--accent-color);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 2rem;
-            font-weight: 600;
-            font-size: 0.875rem;
-            z-index: 10;
         }
 
         .product-body {
@@ -191,22 +290,89 @@ $paginated_products = array_slice($products, $offset, $items_per_page);
 </head>
 
 <body>
+    <!-- Top Navigation Bar -->
+    <nav class="top-navbar">
+        <div class="container">
+            <div class="row align-items-center">
+                <!-- Brand Logo -->
+                <div class="col-md-3">
+                    <a href="../index.php" class="brand-logo">
+                        <i class="fas fa-music"></i>
+                        <span>GhanaTunes</span>
+                    </a>
+                </div>
+
+                <!-- Navigation Links -->
+                <div class="col-md-5">
+                    <div class="nav-links">
+                        <a href="../index.php" class="nav-link-custom">
+                            <i class="fas fa-home me-1"></i>Home
+                        </a>
+                        <a href="all_product.php" class="nav-link-custom active">
+                            <i class="fas fa-store me-1"></i>All Products
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Search & User Menu -->
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center justify-content-end gap-3">
+                        <!-- Cart Icon -->
+                        <?php if (is_logged_in()): ?>
+                            <a href="cart.php" class="nav-link-custom cart-badge">
+                                <i class="fas fa-shopping-cart fa-lg"></i>
+                                <?php if ($cart_count > 0): ?>
+                                    <span class="badge"><?php echo $cart_count; ?></span>
+                                <?php endif; ?>
+                            </a>
+
+                            <!-- User Menu -->
+                            <div class="dropdown">
+                                <a href="#" class="user-menu dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="fas fa-user me-1"></i>
+                                    <?php echo htmlspecialchars($customer_name); ?>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="../login/logout.php">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                    </a></li>
+                                </ul>
+                            </div>
+                        <?php else: ?>
+                            <a href="../login/login.php" class="nav-link-custom">
+                                <i class="fas fa-sign-in-alt me-1"></i>Login
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
     <!-- Page Header -->
     <div class="page-header">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h1 class="mb-0">
+                    <h1 class="page-title">
                         <i class="fas fa-store me-3"></i>All Products
                     </h1>
-                    <p class="mb-0 mt-2 opacity-75">
+                    <p class="text-muted mb-0">
                         Explore our collection of <?php echo $total_products; ?> authentic instruments
                     </p>
                 </div>
-                <div class="col-md-4 text-md-end">
-                    <a href="../index.php" class="btn btn-light me-2">
-                        <i class="fas fa-home me-2"></i>Home
-                    </a>
+                <div class="col-md-4">
+                    <!-- Search Box -->
+                    <form method="GET" action="product_search_result.php" class="search-box">
+                        <input type="text" 
+                               name="query" 
+                               class="form-control" 
+                               placeholder="Search products..."
+                               required>
+                        <button type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
