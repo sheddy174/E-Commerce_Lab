@@ -15,7 +15,7 @@ define('PAYSTACK_VERIFY_ENDPOINT', PAYSTACK_API_URL . '/transaction/verify/');
 
 // Application Settings
 define('APP_ENVIRONMENT', 'test'); // Change to 'live' in production
-define('PAYSTACK_CALLBACK_URL', 'http://169.239.251.102:442/~shadrack.berdah/view/paystack_callback.php');
+define('PAYSTACK_CALLBACK_URL', 'http://169.239.251.102:442/~shadrack.berdah/view/payment_callback.php');
 
 
 /**
