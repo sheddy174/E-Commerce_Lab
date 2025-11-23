@@ -415,18 +415,12 @@ $related_products = array_slice($related_products, 0, 4);
         <?php endif; ?>
     </div>
 
+    <!-- Required Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- <script>
-        $(document).ready(function() {
-            // Add to cart functionality (placeholder)
-            $('.btn-add-cart').click(function() {
-                alert('Add to Cart functionality will be implemented in future labs!');
-            });
-        });
-    </script> -->
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../js/cart.js"></script>
+    
     <script>
         $(document).ready(function() {
             $('#addToCartBtn').click(function() {
@@ -454,6 +448,5 @@ $related_products = array_slice($related_products, 0, 4);
             });
         });
     </script>
-
 </body>
 </html>
