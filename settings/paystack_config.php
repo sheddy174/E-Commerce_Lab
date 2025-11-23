@@ -5,7 +5,7 @@
  */
 
 // Paystack API Keys
-define('PAYSTACK_SECRET_KEY', 'sk_test_de0f60ace6f98ed87085012ff3d3958e7c90267aE');
+define('PAYSTACK_SECRET_KEY', 'sk_test_de0f60ace6f98ed87085012ff3d3958e7c90267a');
 define('PAYSTACK_PUBLIC_KEY', 'pk_test_ee6698b8378ff4bc29632460092037afa0dc7f69');
 
 // Paystack URLs
@@ -15,7 +15,8 @@ define('PAYSTACK_VERIFY_ENDPOINT', PAYSTACK_API_URL . '/transaction/verify/');
 
 // Application Settings
 define('APP_ENVIRONMENT', 'test'); // Change to 'live' in production
-define('PAYSTACK_CALLBACK_URL', 'http://localhost/ecommerce_2025A_shadrack_berdah/view/paystack_callback.php');
+define('PAYSTACK_CALLBACK_URL', 'http://169.239.251.102:442/~shadrack.berdah/view/paystack_callback.php');
+
 
 /**
  * Initialize a Paystack transaction
