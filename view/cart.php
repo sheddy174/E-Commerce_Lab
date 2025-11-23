@@ -15,6 +15,7 @@ if (!is_logged_in()) {
 }
 
 $customer_id = get_user_id();
+$customer_name = get_user_name();
 
 // Get cart items
 $cart_items = get_user_cart_ctr($customer_id);
@@ -28,6 +29,9 @@ foreach ($cart_items as $item) {
 
 $shipping = 0; // Free shipping for now
 $total = $subtotal + $shipping;
+
+// Get cart count
+$cart_count = count($cart_items);
 ?>
 
 <!DOCTYPE html>
@@ -53,12 +57,94 @@ $total = $subtotal + $shipping;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
-        .page-header {
+        /* Top Navigation Bar */
+        .top-navbar {
             background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            padding: 1rem 0;
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+        }
+
+        .brand-logo {
             color: white;
+            font-size: 1.75rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .brand-logo i {
+            color: var(--accent-color);
+        }
+
+        .brand-logo:hover {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .nav-link-custom {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link-custom:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .nav-link-custom.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .cart-badge {
+            position: relative;
+        }
+
+        .cart-badge .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        .user-menu {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .user-menu:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .page-header {
+            background: white;
             padding: 2rem 0;
             margin-bottom: 2rem;
-            box-shadow: 0 0.5rem 1rem rgba(46, 134, 171, 0.3);
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05);
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0;
         }
         
         .cart-card {
@@ -198,20 +284,73 @@ $total = $subtotal + $shipping;
     </style>
 </head>
 <body>
+    <!-- Top Navigation Bar -->
+    <nav class="top-navbar">
+        <div class="container">
+            <div class="row align-items-center">
+                <!-- Brand Logo -->
+                <div class="col-md-3">
+                    <a href="../index.php" class="brand-logo">
+                        <i class="fas fa-music"></i>
+                        <span>GhanaTunes</span>
+                    </a>
+                </div>
+
+                <!-- Navigation Links -->
+                <div class="col-md-5">
+                    <div class="nav-links">
+                        <a href="../index.php" class="nav-link-custom">
+                            <i class="fas fa-home me-1"></i>Home
+                        </a>
+                        <a href="all_product.php" class="nav-link-custom">
+                            <i class="fas fa-store me-1"></i>All Products
+                        </a>
+                    </div>
+                </div>
+
+                <!-- User Menu -->
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center justify-content-end gap-3">
+                        <!-- Cart Icon -->
+                        <a href="cart.php" class="nav-link-custom cart-badge active">
+                            <i class="fas fa-shopping-cart fa-lg"></i>
+                            <?php if ($cart_count > 0): ?>
+                                <span class="badge"><?php echo $cart_count; ?></span>
+                            <?php endif; ?>
+                        </a>
+
+                        <!-- User Menu -->
+                        <div class="dropdown">
+                            <a href="#" class="user-menu dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fas fa-user me-1"></i>
+                                <?php echo htmlspecialchars($customer_name); ?>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="../login/logout.php">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
     <!-- Page Header -->
     <div class="page-header">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h1 class="mb-0">
+                    <h1 class="page-title">
                         <i class="fas fa-shopping-cart me-3"></i>Shopping Cart
                     </h1>
-                    <p class="mb-0 mt-2 opacity-75">
+                    <p class="text-muted mb-0">
                         <?php echo count($cart_items); ?> item<?php echo count($cart_items) != 1 ? 's' : ''; ?> in your cart
                     </p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <a href="all_product.php" class="btn btn-light">
+                    <a href="all_product.php" class="btn btn-outline-primary">
                         <i class="fas fa-arrow-left me-2"></i>Continue Shopping
                     </a>
                 </div>
