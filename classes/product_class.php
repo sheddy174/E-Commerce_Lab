@@ -77,22 +77,23 @@ class Product extends db_connection
      * @param string $product_desc Product description
      * @param string $product_image Image path
      * @param string $product_keywords Keywords for search
+     * @param int|null $artisan_id Artisan ID (optional, null for admin products)
      * @return int|false Product ID on success, false on failure
      */
     public function addProduct($product_cat, $product_brand, $product_title, $product_price, 
-                               $product_desc, $product_image, $product_keywords)
+                               $product_desc, $product_image, $product_keywords, $artisan_id = null)
     {
         $stmt = $this->db->prepare("INSERT INTO products (product_cat, product_brand, product_title, 
-                                     product_price, product_desc, product_image, product_keywords) 
-                                     VALUES (?, ?, ?, ?, ?, ?, ?)");
+                                     product_price, product_desc, product_image, product_keywords, artisan_id) 
+                                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         
         if (!$stmt) {
             error_log("Prepare failed: " . $this->db->error);
             return false;
         }
 
-        $stmt->bind_param("iisdsss", $product_cat, $product_brand, $product_title, 
-                         $product_price, $product_desc, $product_image, $product_keywords);
+        $stmt->bind_param("iisdsss i", $product_cat, $product_brand, $product_title, 
+                         $product_price, $product_desc, $product_image, $product_keywords, $artisan_id);
         
         if ($stmt->execute()) {
             $product_id = $this->db->insert_id;
@@ -103,8 +104,7 @@ class Product extends db_connection
         error_log("Execute failed: " . $stmt->error);
         $stmt->close();
         return false;
-    }
-
+    } 
     /**
      * Get product by ID with category and brand names
      * @param int $product_id Product ID
@@ -144,32 +144,45 @@ class Product extends db_connection
      * @param string $product_keywords Keywords
      * @return bool Success status
      */
+    /**
+     * Update product
+     * @param int $product_id Product ID
+     * @param int $product_cat Category ID
+     * @param int $product_brand Brand ID
+     * @param string $product_title Product title
+     * @param float $product_price Product price
+     * @param string $product_desc Product description
+     * @param string $product_image Image path (optional, null to keep existing)
+     * @param string $product_keywords Keywords
+     * @param int|null $artisan_id Artisan ID (optional)
+     * @return bool Success status
+     */
     public function updateProduct($product_id, $product_cat, $product_brand, $product_title, 
-                                  $product_price, $product_desc, $product_image, $product_keywords)
+                                  $product_price, $product_desc, $product_image, $product_keywords, $artisan_id = null)
     {
         // If image is null, don't update it (keep existing image)
         if ($product_image === null) {
             $stmt = $this->db->prepare("UPDATE products SET product_cat = ?, product_brand = ?, 
                                         product_title = ?, product_price = ?, product_desc = ?, 
-                                        product_keywords = ? WHERE product_id = ?");
+                                        product_keywords = ?, artisan_id = ? WHERE product_id = ?");
             
             if (!$stmt) {
                 return false;
             }
 
-            $stmt->bind_param("iisdssi", $product_cat, $product_brand, $product_title, 
-                             $product_price, $product_desc, $product_keywords, $product_id);
+            $stmt->bind_param("iisdssii", $product_cat, $product_brand, $product_title, 
+                             $product_price, $product_desc, $product_keywords, $artisan_id, $product_id);
         } else {
             $stmt = $this->db->prepare("UPDATE products SET product_cat = ?, product_brand = ?, 
                                         product_title = ?, product_price = ?, product_desc = ?, 
-                                        product_image = ?, product_keywords = ? WHERE product_id = ?");
+                                        product_image = ?, product_keywords = ?, artisan_id = ? WHERE product_id = ?");
             
             if (!$stmt) {
                 return false;
             }
 
-            $stmt->bind_param("iisdsssi", $product_cat, $product_brand, $product_title, 
-                             $product_price, $product_desc, $product_image, $product_keywords, $product_id);
+            $stmt->bind_param("iisdsssii", $product_cat, $product_brand, $product_title, 
+                             $product_price, $product_desc, $product_image, $product_keywords, $artisan_id, $product_id);
         }
         
         $success = $stmt->execute();
@@ -585,7 +598,119 @@ class Product extends db_connection
         $result = $stmt->get_result()->fetch_assoc();
         $stmt->close();
         
-        return $result ? (int)$result['today_count'] : 0;
+    return $result ? (int)$result['today_count'] : 0;
+}
+
+/**
+ * Get all products by artisan
+ * @param int $artisan_id Artisan ID
+ * @return array|false Array of products or false on failure
+ */
+public function getProductsByArtisan($artisan_id)
+{
+    $stmt = $this->db->prepare("
+        SELECT p.*, c.cat_name, b.brand_name 
+        FROM products p 
+        LEFT JOIN categories c ON p.product_cat = c.cat_id 
+        LEFT JOIN brands b ON p.product_brand = b.brand_id 
+        WHERE p.artisan_id = ? 
+        ORDER BY p.product_id DESC
+    ");
+    
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->bind_param("i", $artisan_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $products = [];
+    
+    while ($row = $result->fetch_assoc()) {
+        $products[] = $row;
+    }
+    
+    $stmt->close();
+    return $products;
+}
+
+    /**
+     * Count total products by artisan
+     * @param int $artisan_id Artisan ID
+     * @return int Product count
+     */
+    public function countArtisanProducts($artisan_id)
+    {
+        $stmt = $this->db->prepare("SELECT COUNT(*) as count FROM products WHERE artisan_id = ?");
+        
+        if (!$stmt) {
+            return 0;
+        }
+
+        $stmt->bind_param("i", $artisan_id);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        
+        return $result ? (int)$result['count'] : 0;
+    }
+
+    /**
+     * Get products by artisan with pagination
+     * @param int $artisan_id Artisan ID
+     * @param int $limit Products per page
+     * @param int $offset Starting point
+     * @return array|false Array of products or false on failure
+     */
+    public function getArtisanProductsPaginated($artisan_id, $limit = 10, $offset = 0)
+    {
+        $stmt = $this->db->prepare("
+            SELECT p.*, c.cat_name, b.brand_name 
+            FROM products p 
+            LEFT JOIN categories c ON p.product_cat = c.cat_id 
+            LEFT JOIN brands b ON p.product_brand = b.brand_id 
+            WHERE p.artisan_id = ? 
+            ORDER BY p.product_id DESC
+            LIMIT ? OFFSET ?
+        ");
+        
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param("iii", $artisan_id, $limit, $offset);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $products = [];
+        
+        while ($row = $result->fetch_assoc()) {
+            $products[] = $row;
+        }
+        
+        $stmt->close();
+        return $products;
+    }
+
+    /**
+     * Check if product belongs to artisan
+     * @param int $product_id Product ID
+     * @param int $artisan_id Artisan ID
+     * @return bool True if product belongs to artisan
+     */
+    public function isArtisanProduct($product_id, $artisan_id)
+    {
+        $stmt = $this->db->prepare("SELECT artisan_id FROM products WHERE product_id = ?");
+        
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param("i", $product_id);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        
+        return $result && $result['artisan_id'] == $artisan_id;
     }
 }
 ?>

@@ -1,7 +1,7 @@
 <?php
 /**
- * Login Action Handler - AJAX Version
- * Returns JSON responses instead of redirects
+ * Login Action Handler - AJAX Version with Role-Based Redirection
+ * Returns JSON responses with appropriate redirect URLs for each role
  */
 
 ini_set('display_errors', 1);
@@ -58,27 +58,33 @@ try {
     $login_result = login_customer_ctr($email, $password);
     
     if ($login_result['success']) {
-        // Set session variables
-        $_SESSION['customer_id'] = $login_result['customer']['customer_id'];
-        $_SESSION['customer_name'] = $login_result['customer']['customer_name'];
-        $_SESSION['customer_email'] = $login_result['customer']['customer_email'];
-        $_SESSION['user_role'] = $login_result['customer']['user_role'];
-        $_SESSION['customer_country'] = $login_result['customer']['customer_country'];
-        $_SESSION['customer_city'] = $login_result['customer']['customer_city'];
-        $_SESSION['customer_contact'] = $login_result['customer']['customer_contact'];
-        $_SESSION['login_time'] = time();
-        
-        // Log successful login
-        error_log("Successful login for user: " . $email);
+        // Set session variables using the helper function
+        set_user_session($login_result['customer']);
         
         // Determine redirect URL based on user role
-        $redirect_url = '../index.php';
-        if (isset($login_result['customer']['user_role']) && $login_result['customer']['user_role'] == 1) {
-            // Admin user - could redirect to admin dashboard if you have one
-            $redirect_url = '../index.php'; // or '../admin/dashboard.php' if exists
+        $user_role = $login_result['customer']['user_role'];
+        $redirect_url = '../index.php'; // Default for customers
+        $role_name = 'Customer';
+        
+        if ($user_role == 1) {
+            // Admin user
+            $redirect_url = '../admin/dashboard.php';
+            $role_name = 'Administrator';
+        } elseif ($user_role == 3) {
+            // Artisan user
+            $redirect_url = '../artisan/dashboard.php';
+            $role_name = 'Artisan';
+        } elseif ($user_role == 2) {
+            // Customer user
+            $redirect_url = '../index.php';
+            $role_name = 'Customer';
         }
         
-        // Return success response
+        // Log successful login with role information
+        error_log("Successful login - Email: {$email}, Role: {$role_name}, Redirect: {$redirect_url}");
+        log_activity("User logged in successfully as {$role_name}", 'info');
+        
+        // Return success response with role-specific data
         $response['status'] = 'success';
         $response['message'] = 'Login successful! Redirecting...';
         $response['redirect'] = $redirect_url;
@@ -86,8 +92,11 @@ try {
             'id' => $login_result['customer']['customer_id'],
             'name' => $login_result['customer']['customer_name'],
             'email' => $login_result['customer']['customer_email'],
-            'role' => $login_result['customer']['user_role'],
-            'is_admin' => ($login_result['customer']['user_role'] == 1)
+            'role' => $user_role,
+            'role_name' => $role_name,
+            'is_admin' => ($user_role == 1),
+            'is_artisan' => ($user_role == 3),
+            'is_customer' => ($user_role == 2)
         ];
         
         echo json_encode($response);
@@ -95,7 +104,8 @@ try {
         
     } else {
         // Log failed attempt
-        error_log("Failed login attempt for email: " . $email . " - " . $login_result['message']);
+        error_log("Failed login attempt - Email: {$email}, Reason: {$login_result['message']}");
+        log_activity("Failed login attempt for email: {$email}", 'warning');
         
         // Return error response
         $response['status'] = 'error';
@@ -106,6 +116,8 @@ try {
     
 } catch (Exception $e) {
     error_log("Login exception: " . $e->getMessage());
+    log_activity("Login system error: " . $e->getMessage(), 'error');
+    
     $response['status'] = 'error';
     $response['message'] = 'A system error occurred. Please try again later.';
     echo json_encode($response);

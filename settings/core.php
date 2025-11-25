@@ -77,6 +77,22 @@ function is_customer()
 }
 
 /**
+ * Check if user is an artisan/vendor
+ * NEW FUNCTION - Added for artisan role support
+ * @return boolean True if artisan, false otherwise
+ */
+function is_artisan()
+{
+    // Check if user is logged in first
+    if (!is_logged_in()) {
+        return false;
+    }
+
+    // Check if user role is set and equals 3 (artisan role)
+    return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 3;
+}
+
+/**
  * Redirect user to login if not authenticated
  * @param string $redirect_url URL to redirect to after login
  * @return void
@@ -109,19 +125,54 @@ function require_admin($redirect_url = '../login/login.php')
 }
 
 /**
+ * Require artisan access - NEW FUNCTION
+ * Enhanced function for artisan-only pages
+ * @param string $redirect_url URL to redirect if not artisan
+ * @return void
+ */
+function require_artisan($redirect_url = '../login/login.php')
+{
+    if (!is_logged_in()) {
+        header("Location: " . $redirect_url);
+        exit();
+    }
+    
+    if (!is_artisan()) {
+        header("Location: ../index.php?error=unauthorized");
+        exit();
+    }
+}
+
+/**
  * Redirect user to specific page based on role
+ * UPDATED - Now includes artisan redirection
  * @return void
  */
 function redirect_by_role()
 {
     if (is_admin()) {
         header("Location: ../admin/dashboard.php");
+    } elseif (is_artisan()) {
+        header("Location: ../artisan/dashboard.php");
     } elseif (is_customer()) {
-        header("Location: ../customer/dashboard.php");
+        header("Location: ../index.php");
     } else {
         header("Location: ../login/login.php");
     }
     exit();
+}
+
+/**
+ * Get user role name - NEW FUNCTION
+ * Returns human-readable role name
+ * @return string Role name
+ */
+function get_user_role_name()
+{
+    if (is_admin()) return 'Administrator';
+    if (is_artisan()) return 'Artisan';
+    if (is_customer()) return 'Customer';
+    return 'Guest';
 }
 
 /**
@@ -164,15 +215,6 @@ function set_user_session($user_data)
     $_SESSION['login_time'] = time();
 }
 
-// /**
-//  * Get current user's full name
-//  * @return string|false User's full name or false if not logged in
-//  */
-// function get_user_name()
-// {
-//     return is_logged_in() ? $_SESSION['customer_name'] : false;
-// }
-
 /**
  * Get current user's full name
  * @return string|false User's full name or false if not logged in
@@ -196,15 +238,6 @@ function get_user_email()
     }
     return false;
 }
-
-// /**
-//  * Get current user's email
-//  * @return string|false User's email or false if not logged in
-//  */
-// function get_user_email()
-// {
-//     return is_logged_in() ? $_SESSION['customer_email'] : false;
-// }
 
 /**
  * Check if current session is valid (not expired)
@@ -337,7 +370,10 @@ function log_activity($message, $level = 'info')
     $log_file = '../logs/activity.log';
     $timestamp = date('Y-m-d H:i:s');
     $user_id = get_user_id() ?: 'guest';
-    $user_role = is_admin() ? 'admin' : (is_customer() ? 'customer' : 'guest');
+    
+    // Updated to include artisan in role detection
+    $user_role = is_admin() ? 'admin' : (is_artisan() ? 'artisan' : (is_customer() ? 'customer' : 'guest'));
+    
     $log_entry = "[{$timestamp}] [{$level}] [User: {$user_id}] [Role: {$user_role}] {$message}" . PHP_EOL;
 
     // Create logs directory if it doesn't exist
@@ -380,6 +416,7 @@ function time_ago($datetime)
 
 /**
  * Debug function to display session information (for development only)
+ * UPDATED - Now includes artisan in debug info
  * @return array Current session data (sensitive data removed)
  */
 function get_session_debug_info()
@@ -394,7 +431,9 @@ function get_session_debug_info()
         'user_name' => get_user_name(),
         'user_email' => get_user_email(),
         'user_role' => get_user_role(),
+        'role_name' => get_user_role_name(),
         'is_admin' => is_admin(),
+        'is_artisan' => is_artisan(),
         'is_customer' => is_customer(),
         'login_time' => $_SESSION['login_time'] ?? 'unknown',
         'session_valid' => is_session_valid()
