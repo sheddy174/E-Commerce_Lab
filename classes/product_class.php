@@ -92,7 +92,7 @@ class Product extends db_connection
             return false;
         }
 
-        $stmt->bind_param("iisdsss i", $product_cat, $product_brand, $product_title, 
+        $stmt->bind_param("iisdsssi", $product_cat, $product_brand, $product_title, 
                          $product_price, $product_desc, $product_image, $product_keywords, $artisan_id);
         
         if ($stmt->execute()) {

@@ -15,6 +15,7 @@ require_once '../classes/product_class.php';
  * @param string $product_desc Product description
  * @param string $product_image Image path
  * @param string $product_keywords Keywords
+ * @param int|null $artisan_id Artisan ID (optional, defaults to null for admin)
  * @return int|false Product ID on success, false on failure
  */
 function add_product_ctr(
@@ -24,7 +25,8 @@ function add_product_ctr(
     $product_price,
     $product_desc,
     $product_image,
-    $product_keywords
+    $product_keywords,
+    $artisan_id = null  // ADDED: Default to null for admin products
 ) {
     try {
         // Validate inputs
@@ -53,7 +55,8 @@ function add_product_ctr(
             $product_price,
             $product_desc,
             $product_image,
-            $product_keywords
+            $product_keywords,
+            $artisan_id  // ADDED: Pass artisan_id (will be null for admin)
         );
 
         error_log("Add product attempt: " . $product_title . " - Result: " . ($result ? 'Success (ID: ' . $result . ')' : 'Failed'));
@@ -64,7 +67,6 @@ function add_product_ctr(
         return false;
     }
 }
-
 /**
  * Get all products
  * @return array|false Array of products or false on failure
@@ -150,6 +152,7 @@ function get_products_by_brand_ctr($brand_id)
  * @param string $product_desc Product description
  * @param string $product_image Image path (null to keep existing)
  * @param string $product_keywords Keywords
+ * @param int|null $artisan_id Artisan ID (optional, defaults to null)
  * @return bool Success status
  */
 function update_product_ctr(
@@ -160,7 +163,8 @@ function update_product_ctr(
     $product_price,
     $product_desc,
     $product_image,
-    $product_keywords
+    $product_keywords,
+    $artisan_id = null  // ADDED: Default to null
 ) {
     try {
         // Validate inputs
@@ -188,7 +192,8 @@ function update_product_ctr(
             $product_price,
             $product_desc,
             $product_image,
-            $product_keywords
+            $product_keywords,
+            $artisan_id  // ADDED: Pass artisan_id
         );
 
         error_log("Update product attempt - ID: " . $product_id . ", Title: " . $product_title . " - Result: " . ($result ? 'Success' : 'Failed'));
