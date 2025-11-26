@@ -361,28 +361,41 @@ function validate_password_strength($password)
 
 /**
  * Log activity for debugging and monitoring
+ * FIXED: Graceful error handling for permission issues
  * @param string $message Log message
  * @param string $level Log level (info, warning, error)
  * @return void
  */
 function log_activity($message, $level = 'info')
 {
-    $log_file = '../logs/activity.log';
-    $timestamp = date('Y-m-d H:i:s');
-    $user_id = get_user_id() ?: 'guest';
-    
-    // Updated to include artisan in role detection
-    $user_role = is_admin() ? 'admin' : (is_artisan() ? 'artisan' : (is_customer() ? 'customer' : 'guest'));
-    
-    $log_entry = "[{$timestamp}] [{$level}] [User: {$user_id}] [Role: {$user_role}] {$message}" . PHP_EOL;
+    // CRITICAL: Suppress all errors to prevent breaking JSON responses
+    try {
+        $log_file = __DIR__ . '/../logs/activity.log';
+        $timestamp = date('Y-m-d H:i:s');
+        $user_id = get_user_id() ?: 'guest';
+        
+        // Updated to include artisan in role detection
+        $user_role = is_admin() ? 'admin' : (is_artisan() ? 'artisan' : (is_customer() ? 'customer' : 'guest'));
+        
+        $log_entry = "[{$timestamp}] [{$level}] [User: {$user_id}] [Role: {$user_role}] {$message}" . PHP_EOL;
 
-    // Create logs directory if it doesn't exist
-    $log_dir = dirname($log_file);
-    if (!is_dir($log_dir)) {
-        mkdir($log_dir, 0755, true);
+        // Create logs directory if it doesn't exist
+        $log_dir = dirname($log_file);
+        if (!is_dir($log_dir)) {
+            // Use @ to suppress warnings if mkdir fails
+            @mkdir($log_dir, 0755, true);
+        }
+
+        // Only attempt to write if directory exists and is writable
+        if (is_dir($log_dir) && is_writable($log_dir)) {
+            @file_put_contents($log_file, $log_entry, FILE_APPEND | LOCK_EX);
+        }
+        // If logging fails, silently continue - don't break the application
+    } catch (Exception $e) {
+        // Silently fail - logging should never break the application
+        // In production, you might want to use error_log() as a fallback
+        // error_log("Logging failed: " . $e->getMessage());
     }
-
-    file_put_contents($log_file, $log_entry, FILE_APPEND | LOCK_EX);
 }
 
 /**

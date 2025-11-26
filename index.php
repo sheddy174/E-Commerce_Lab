@@ -259,7 +259,7 @@ if (isset($_GET['login'])) {
             font-size: 2.5rem;
         }
 
-        /* NEW: Registration Modal Styles */
+        /* Registration Modal Styles */
         .registration-card {
             background: white;
             border-radius: 1rem;
@@ -322,13 +322,11 @@ if (isset($_GET['login'])) {
             filter: brightness(0) invert(1);
         }
 
-        /* NEW: Better hover effects */
         .btn-outline-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 0.5rem 1rem rgba(46, 134, 171, 0.3);
         }
 
-        /* NEW: Improve dropdown menu */
         .dropdown-menu {
             border-radius: 0.5rem;
             box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
@@ -445,9 +443,10 @@ if (isset($_GET['login'])) {
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="login/register.php" class="btn btn-light btn-sm">
+                            <!-- CHANGED: Register button now opens modal -->
+                            <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#registrationModal">
                                 <i class="fas fa-user-plus me-1"></i>Register
-                            </a>
+                            </button>
                         </li>
                     <?php endif; ?>
                 </ul>
@@ -525,7 +524,6 @@ if (isset($_GET['login'])) {
                             <a href="view/all_product.php" class="btn btn-ocean btn-lg">
                                 <i class="fas fa-shopping-bag me-2"></i>Browse Products
                             </a>
-                            <!-- NEW: Get Started button opens modal -->
                             <button class="btn btn-outline-primary btn-lg" data-bs-toggle="modal" data-bs-target="#registrationModal">
                                 <i class="fas fa-user-plus me-2"></i>Get Started
                             </button>
@@ -620,7 +618,7 @@ if (isset($_GET['login'])) {
         </div>
     </div>
 
-    <!-- NEW: Registration Options Modal -->
+    <!-- Registration Options Modal -->
     <div class="modal fade" id="registrationModal" tabindex="-1" aria-labelledby="registrationModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
