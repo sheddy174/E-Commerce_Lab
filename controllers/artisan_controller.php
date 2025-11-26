@@ -48,13 +48,15 @@ function get_artisan_profile_ctr($customer_id)
 }
 
 /**
- * Get artisan profile by artisan ID
- * @param int $artisan_id Artisan ID
- * @return array|false Profile data on success, false on failure
+ * Get artisan by ID
  */
 function get_artisan_by_id_ctr($artisan_id)
 {
     try {
+        if (!is_numeric($artisan_id) || $artisan_id <= 0) {
+            return false;
+        }
+
         $artisan = new Artisan();
         return $artisan->getArtisanById($artisan_id);
     } catch (Exception $e) {
@@ -62,6 +64,34 @@ function get_artisan_by_id_ctr($artisan_id)
         return false;
     }
 }
+
+
+/**
+ * Update artisan verification status
+ */
+function update_artisan_verification_ctr($artisan_id, $status)
+{
+    try {
+        if (!is_numeric($artisan_id) || $artisan_id <= 0) {
+            return false;
+        }
+
+        if (!in_array($status, ['verified', 'pending', 'rejected'])) {
+            return false;
+        }
+
+        $artisan = new Artisan();
+        $result = $artisan->updateVerificationStatus($artisan_id, $status);
+
+        error_log("Update artisan verification - ID: " . $artisan_id . ", Status: " . $status . " - Result: " . ($result ? 'Success' : 'Failed'));
+
+        return $result;
+    } catch (Exception $e) {
+        error_log("Update artisan verification exception: " . $e->getMessage());
+        return false;
+    }
+}
+
 
 /**
  * Update artisan profile
@@ -101,47 +131,48 @@ function delete_artisan_profile_ctr($artisan_id)
 // ==========================================
 
 /**
- * Get all artisans (all statuses)
- * @return array|false Array of artisans on success, false on failure
+ * Get all artisans
  */
 function get_all_artisans_ctr()
 {
     try {
         $artisan = new Artisan();
-        return $artisan->getAllArtisans();
+        $result = $artisan->getAllArtisans();
+        return $result !== false ? $result : []; // FIXED: Return empty array instead of false
     } catch (Exception $e) {
         error_log("Get all artisans exception: " . $e->getMessage());
-        return false;
+        return []; // FIXED: Return empty array on error
     }
 }
 
+
 /**
- * Get all verified artisans
- * @return array|false Array of verified artisans on success, false on failure
+ * Get verified artisans
  */
 function get_verified_artisans_ctr()
 {
     try {
         $artisan = new Artisan();
-        return $artisan->getVerifiedArtisans();
+        $result = $artisan->getVerifiedArtisans();
+        return $result !== false ? $result : []; // FIXED: Return empty array instead of false
     } catch (Exception $e) {
         error_log("Get verified artisans exception: " . $e->getMessage());
-        return false;
+        return []; // FIXED: Return empty array on error
     }
 }
 
 /**
- * Get pending artisans (awaiting verification)
- * @return array|false Array of pending artisans on success, false on failure
+ * Get pending artisans
  */
 function get_pending_artisans_ctr()
 {
     try {
         $artisan = new Artisan();
-        return $artisan->getPendingArtisans();
+        $result = $artisan->getPendingArtisans();
+        return $result !== false ? $result : []; // FIXED: Return empty array instead of false
     } catch (Exception $e) {
         error_log("Get pending artisans exception: " . $e->getMessage());
-        return false;
+        return []; // FIXED: Return empty array on error
     }
 }
 
@@ -330,13 +361,15 @@ function get_artisan_products_ctr($artisan_id)
 }
 
 /**
- * Count total products by artisan
- * @param int $artisan_id Artisan ID
- * @return int Product count
+ * Count artisan products
  */
 function count_artisan_products_ctr($artisan_id)
 {
     try {
+        if (!is_numeric($artisan_id) || $artisan_id <= 0) {
+            return 0;
+        }
+
         $product = new Product();
         return $product->countArtisanProducts($artisan_id);
     } catch (Exception $e) {
@@ -379,4 +412,3 @@ function get_verification_documents_ctr($artisan_id)
         return false;
     }
 }
-?>
