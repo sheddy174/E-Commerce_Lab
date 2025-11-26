@@ -2,7 +2,6 @@
 session_start();
 require_once __DIR__ . '/settings/core.php';
 
-
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -160,6 +159,23 @@ if (isset($_GET['login'])) {
             box-shadow: 0 0.5rem 1rem rgba(46, 134, 171, 0.3);
         }
 
+        .btn-artisan {
+            background: linear-gradient(135deg, var(--accent-color), #C77700);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.875rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-artisan:hover {
+            background: linear-gradient(135deg, #C77700, var(--accent-color));
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 0.5rem 1rem rgba(241, 143, 1, 0.3);
+        }
+
         .alert {
             border-radius: 1rem;
             border: none;
@@ -242,6 +258,93 @@ if (isset($_GET['login'])) {
             margin-bottom: 3rem;
             font-size: 2.5rem;
         }
+
+        /* NEW: Registration Modal Styles */
+        .registration-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+            cursor: pointer;
+            height: 100%;
+        }
+
+        .registration-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.15);
+        }
+
+        .registration-card.customer:hover {
+            border-color: var(--primary-color);
+        }
+
+        .registration-card.artisan:hover {
+            border-color: var(--accent-color);
+        }
+
+        .registration-card .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .registration-card.customer .icon {
+            color: var(--primary-color);
+        }
+
+        .registration-card.artisan .icon {
+            color: var(--accent-color);
+        }
+
+        .registration-card h4 {
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .registration-card p {
+            color: var(--secondary-color);
+            margin-bottom: 1.5rem;
+            min-height: 60px;
+        }
+
+        .registration-card .btn {
+            width: 100%;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            border: none;
+        }
+
+        .modal-header .btn-close {
+            filter: brightness(0) invert(1);
+        }
+
+        /* NEW: Better hover effects */
+        .btn-outline-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0.5rem 1rem rgba(46, 134, 171, 0.3);
+        }
+
+        /* NEW: Improve dropdown menu */
+        .dropdown-menu {
+            border-radius: 0.5rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            border: none;
+        }
+
+        .dropdown-item {
+            padding: 0.75rem 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--light-blue);
+            color: var(--primary-color);
+            transform: translateX(5px);
+        }
     </style>
 </head>
 
@@ -309,6 +412,23 @@ if (isset($_GET['login'])) {
                                             <i class="fas fa-box-open me-2"></i>Manage Products
                                         </a>
                                     </li>
+                                    <li>
+                                        <a class="dropdown-item" href="admin/verify_artisans.php">
+                                            <i class="fas fa-user-check me-2"></i>Verify Artisans
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                <?php elseif (is_artisan()): ?>
+                                    <li>
+                                        <a class="dropdown-item" href="artisan/dashboard.php">
+                                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="artisan/products.php">
+                                            <i class="fas fa-box me-2"></i>My Products
+                                        </a>
+                                    </li>
                                     <li><hr class="dropdown-divider"></li>
                                 <?php endif; ?>
                                 <li>
@@ -361,11 +481,15 @@ if (isset($_GET['login'])) {
                                 <strong>Email:</strong> <?php echo display_user_email(); ?>
                                 <span class="mx-3">|</span>
                                 <i class="fas fa-user-tag me-2 text-muted"></i>
-                                <strong>Role:</strong> <?php echo is_admin() ? 'Administrator' : 'Customer'; ?>
+                                <strong>Role:</strong> <?php echo get_user_role_name(); ?>
                                 <?php if (is_admin()): ?>
                                     <span class="mx-3">|</span>
                                     <i class="fas fa-crown me-2 text-warning"></i>
                                     <span class="text-warning fw-bold">Admin Access</span>
+                                <?php elseif (is_artisan()): ?>
+                                    <span class="mx-3">|</span>
+                                    <i class="fas fa-hammer me-2" style="color: var(--accent-color);"></i>
+                                    <span class="fw-bold" style="color: var(--accent-color);">Artisan Vendor</span>
                                 <?php endif; ?>
                             </p>
                         </div>
@@ -383,6 +507,10 @@ if (isset($_GET['login'])) {
                                 <a href="admin/product.php" class="btn btn-outline-primary btn-lg">
                                     <i class="fas fa-cog me-2"></i>Manage Products
                                 </a>
+                            <?php elseif (is_artisan()): ?>
+                                <a href="artisan/dashboard.php" class="btn btn-artisan btn-lg">
+                                    <i class="fas fa-tachometer-alt me-2"></i>My Dashboard
+                                </a>
                             <?php endif; ?>
                         </div>
                     <?php else: ?>
@@ -397,9 +525,10 @@ if (isset($_GET['login'])) {
                             <a href="view/all_product.php" class="btn btn-ocean btn-lg">
                                 <i class="fas fa-shopping-bag me-2"></i>Browse Products
                             </a>
-                            <a href="login/register.php" class="btn btn-outline-primary btn-lg">
+                            <!-- NEW: Get Started button opens modal -->
+                            <button class="btn btn-outline-primary btn-lg" data-bs-toggle="modal" data-bs-target="#registrationModal">
                                 <i class="fas fa-user-plus me-2"></i>Get Started
-                            </a>
+                            </button>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -485,6 +614,60 @@ if (isset($_GET['login'])) {
                         <i class="fas fa-shipping-fast"></i>
                         <h5>Fast Delivery</h5>
                         <p class="text-muted">Quick and reliable shipping across Ghana with mobile money payment</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Registration Options Modal -->
+    <div class="modal fade" id="registrationModal" tabindex="-1" aria-labelledby="registrationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="registrationModalLabel">
+                        <i class="fas fa-user-plus me-2"></i>Choose Your Account Type
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-4">
+                        <!-- Customer Registration -->
+                        <div class="col-md-6">
+                            <div class="registration-card customer" onclick="window.location.href='login/register.php'">
+                                <div class="icon">
+                                    <i class="fas fa-user-circle"></i>
+                                </div>
+                                <h4>Register as Customer</h4>
+                                <p>Browse and purchase authentic Ghanaian instruments and modern music equipment</p>
+                                <a href="login/register.php" class="btn btn-ocean">
+                                    <i class="fas fa-shopping-bag me-2"></i>Shop Now
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Artisan Registration -->
+                        <div class="col-md-6">
+                            <div class="registration-card artisan" onclick="window.location.href='login/register_artisan.php'">
+                                <div class="icon">
+                                    <i class="fas fa-hammer"></i>
+                                </div>
+                                <h4>Register as Artisan</h4>
+                                <p>Showcase your craftsmanship, sell your instruments, and reach more customers</p>
+                                <a href="login/register_artisan.php" class="btn btn-artisan">
+                                    <i class="fas fa-store me-2"></i>Sell Products
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <p class="text-muted mb-0">
+                            Already have an account? 
+                            <a href="login/login.php" class="text-primary fw-bold">
+                                <i class="fas fa-sign-in-alt me-1"></i>Login Here
+                            </a>
+                        </p>
                     </div>
                 </div>
             </div>

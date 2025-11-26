@@ -7,11 +7,22 @@ session_start();
 
 // Redirect if already logged in
 if (isset($_SESSION['customer_id'])) {
-    header("Location: ../index.php");
+    // Redirect based on role
+    if (isset($_SESSION['user_role'])) {
+        if ($_SESSION['user_role'] == 1) {
+            header("Location: ../admin/category.php");
+        } elseif ($_SESSION['user_role'] == 3) {
+            header("Location: ../artisan/dashboard.php");
+        } else {
+            header("Location: ../index.php");
+        }
+    } else {
+        header("Location: ../index.php");
+    }
     exit();
 }
 
-// Handle error messages (for backward compatibility)
+// Handle error messages
 $error_message = '';
 if (isset($_GET['error'])) {
     switch ($_GET['error']) {
@@ -24,6 +35,9 @@ if (isset($_GET['error'])) {
         case 'system_error':
             $error_message = 'System error occurred. Please try again.';
             break;
+        case 'unauthorized':
+            $error_message = 'You do not have permission to access that page';
+            break;
         default:
             $error_message = htmlspecialchars($_GET['error']);
     }
@@ -35,11 +49,9 @@ if (isset($_GET['error'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Login - GhanaTunes</title>
+    <title>Login - GhanaTunes</title>
     
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
@@ -48,9 +60,6 @@ if (isset($_GET['error'])) {
             --primary-hover: #1B5E7A;
             --accent-color: #F18F01;
             --secondary-color: #6c757d;
-            --light-blue: #E3F2FD;
-            --success-color: #198754;
-            --danger-color: #dc3545;
         }
         
         body {
@@ -70,7 +79,6 @@ if (isset($_GET['error'])) {
             border-radius: 1rem;
             overflow: hidden;
             box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
             background-color: rgba(255, 255, 255, 0.98);
         }
         
@@ -82,20 +90,8 @@ if (isset($_GET['error'])) {
             text-align: center;
         }
         
-        .card-header h4 {
-            margin: 0;
-            font-weight: 700;
-            font-size: 1.5rem;
-        }
-        
         .card-body {
             padding: 2.5rem;
-        }
-        
-        .form-label {
-            font-weight: 600;
-            color: var(--secondary-color);
-            margin-bottom: 0.5rem;
         }
         
         .form-control {
@@ -103,7 +99,6 @@ if (isset($_GET['error'])) {
             border-radius: 0.5rem;
             padding: 0.875rem 1rem;
             transition: all 0.3s ease;
-            font-size: 1rem;
         }
         
         .form-control:focus {
@@ -118,7 +113,6 @@ if (isset($_GET['error'])) {
             padding: 0.875rem 2rem;
             border-radius: 0.5rem;
             font-weight: 600;
-            font-size: 1rem;
             transition: all 0.3s ease;
         }
         
@@ -127,14 +121,6 @@ if (isset($_GET['error'])) {
             transform: translateY(-2px);
             box-shadow: 0 0.5rem 1rem rgba(46, 134, 171, 0.3);
             color: white;
-        }
-        
-        .btn-custom:disabled {
-            background: var(--secondary-color);
-            transform: none;
-            box-shadow: none;
-            cursor: not-allowed;
-            opacity: 0.65;
         }
         
         .card-footer {
@@ -148,18 +134,10 @@ if (isset($_GET['error'])) {
             color: var(--primary-color);
             text-decoration: none;
             font-weight: 600;
-            transition: color 0.3s ease;
         }
         
         .highlight:hover {
-            color: var(--primary-hover);
             text-decoration: underline;
-        }
-        
-        .alert {
-            border-radius: 0.5rem;
-            border: none;
-            margin-bottom: 1rem;
         }
 
         .back-link {
@@ -175,13 +153,33 @@ if (isset($_GET['error'])) {
             color: var(--accent-color);
             transform: translateX(-5px);
         }
+
+        .register-options {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .register-options a {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .btn-artisan {
+            background: linear-gradient(135deg, var(--accent-color), #C77700);
+            color: white;
+        }
+
+        .btn-artisan:hover {
+            background: linear-gradient(135deg, #C77700, var(--accent-color));
+            color: white;
+        }
     </style>
 </head>
 <body>
     <div class="container login-container">
         <div class="row justify-content-center">
             <div class="col-lg-5 col-md-7">
-                <!-- Back to Home Link -->
                 <a href="../index.php" class="back-link">
                     <i class="fas fa-arrow-left me-2"></i>Back to Home
                 </a>
@@ -200,7 +198,6 @@ if (isset($_GET['error'])) {
                             </div>
                         <?php endif; ?>
                         
-                        <!-- AJAX Form - ID is important for JavaScript -->
                         <form id="login-form" novalidate>
                             <div class="mb-3">
                                 <label for="email" class="form-label">
@@ -211,7 +208,6 @@ if (isset($_GET['error'])) {
                                        id="email" 
                                        name="customer_email" 
                                        placeholder="Enter your email address"
-                                       value="<?php echo isset($_GET['email']) ? htmlspecialchars($_GET['email']) : ''; ?>"
                                        required
                                        autocomplete="email">
                             </div>
@@ -230,19 +226,14 @@ if (isset($_GET['error'])) {
                             </div>
                             
                             <div class="mb-4">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div class="form-check">
-                                        <input class="form-check-input" 
-                                               type="checkbox" 
-                                               id="rememberMe" 
-                                               name="remember_me">
-                                        <label class="form-check-label" for="rememberMe">
-                                            Remember me
-                                        </label>
-                                    </div>
-                                    <a href="#" class="text-decoration-none" style="color: var(--accent-color);">
-                                        <i class="fas fa-key me-1"></i>Forgot Password?
-                                    </a>
+                                <div class="form-check">
+                                    <input class="form-check-input" 
+                                           type="checkbox" 
+                                           id="rememberMe" 
+                                           name="remember_me">
+                                    <label class="form-check-label" for="rememberMe">
+                                        Remember me
+                                    </label>
                                 </div>
                             </div>
                             
@@ -253,19 +244,21 @@ if (isset($_GET['error'])) {
                     </div>
                     
                     <div class="card-footer">
-                        <p class="mb-0">
-                            Don't have an account? 
-                            <a href="register.php" class="highlight">
-                                <i class="fas fa-user-plus me-1"></i>Create Account
+                        <p class="mb-3"><strong>Don't have an account?</strong></p>
+                        <div class="register-options">
+                            <a href="register.php" class="btn btn-outline-primary">
+                                <i class="fas fa-user-plus me-1"></i>Customer
                             </a>
-                        </p>
+                            <a href="register_artisan.php" class="btn btn-artisan">
+                                <i class="fas fa-hammer me-1"></i>Artisan
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../js/login.js"></script>
