@@ -469,6 +469,50 @@ $all_artisans = get_all_artisans_ctr();
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Initialize DataTables AFTER DOM is fully loaded -->
+    <script>
+        $(document).ready(function() {
+            // Initialize DataTables with error handling
+            try {
+                $('#pendingTable').DataTable({
+                    pageLength: 10,
+                    order: [[7, 'desc']], // Sort by applied date
+                    language: {
+                        emptyTable: "No pending applications"
+                    }
+                });
+            } catch (e) {
+                console.error('Error initializing pendingTable:', e);
+            }
+            
+            try {
+                $('#verifiedTable').DataTable({
+                    pageLength: 10,
+                    order: [[6, 'desc']], // Sort by verified date
+                    language: {
+                        emptyTable: "No verified artisans yet"
+                    }
+                });
+            } catch (e) {
+                console.error('Error initializing verifiedTable:', e);
+            }
+            
+            try {
+                $('#allTable').DataTable({
+                    pageLength: 10,
+                    order: [[0, 'desc']], // Sort by ID
+                    language: {
+                        emptyTable: "No artisans found"
+                    }
+                });
+            } catch (e) {
+                console.error('Error initializing allTable:', e);
+            }
+        });
+    </script>
+    
+    <!-- Load custom JS AFTER DataTables initialization -->
     <script src="../js/verify_artisans.js"></script>
 </body>
 </html>

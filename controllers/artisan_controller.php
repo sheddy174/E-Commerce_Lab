@@ -370,6 +370,7 @@ function count_artisan_products_ctr($artisan_id)
             return 0;
         }
 
+        require_once '../classes/product_class.php';
         $product = new Product();
         return $product->countArtisanProducts($artisan_id);
     } catch (Exception $e) {

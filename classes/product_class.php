@@ -52,7 +52,7 @@ class Product extends db_connection
         $stmt->bind_param("i", $this->product_id);
         $stmt->execute();
         $result = $stmt->get_result()->fetch_assoc();
-        
+
         if ($result) {
             $this->product_cat = $result['product_cat'];
             $this->product_brand = $result['product_brand'];
@@ -63,7 +63,7 @@ class Product extends db_connection
             $this->product_keywords = $result['product_keywords'];
             return true;
         }
-        
+
         $stmt->close();
         return false;
     }
@@ -80,31 +80,47 @@ class Product extends db_connection
      * @param int|null $artisan_id Artisan ID (optional, null for admin products)
      * @return int|false Product ID on success, false on failure
      */
-    public function addProduct($product_cat, $product_brand, $product_title, $product_price, 
-                               $product_desc, $product_image, $product_keywords, $artisan_id = null)
-    {
+    public function addProduct(
+        $product_cat,
+        $product_brand,
+        $product_title,
+        $product_price,
+        $product_desc,
+        $product_image,
+        $product_keywords,
+        $artisan_id = null
+    ) {
         $stmt = $this->db->prepare("INSERT INTO products (product_cat, product_brand, product_title, 
                                      product_price, product_desc, product_image, product_keywords, artisan_id) 
                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        
+
         if (!$stmt) {
             error_log("Prepare failed: " . $this->db->error);
             return false;
         }
 
-        $stmt->bind_param("iisdsssi", $product_cat, $product_brand, $product_title, 
-                         $product_price, $product_desc, $product_image, $product_keywords, $artisan_id);
-        
+        $stmt->bind_param(
+            "iisdsssi",
+            $product_cat,
+            $product_brand,
+            $product_title,
+            $product_price,
+            $product_desc,
+            $product_image,
+            $product_keywords,
+            $artisan_id
+        );
+
         if ($stmt->execute()) {
             $product_id = $this->db->insert_id;
             $stmt->close();
             return $product_id;
         }
-        
+
         error_log("Execute failed: " . $stmt->error);
         $stmt->close();
         return false;
-    } 
+    }
     /**
      * Get product by ID with category and brand names
      * @param int $product_id Product ID
@@ -119,7 +135,7 @@ class Product extends db_connection
             LEFT JOIN brands b ON p.product_brand = b.brand_id 
             WHERE p.product_id = ?
         ");
-        
+
         if (!$stmt) {
             return false;
         }
@@ -128,7 +144,7 @@ class Product extends db_connection
         $stmt->execute();
         $result = $stmt->get_result()->fetch_assoc();
         $stmt->close();
-        
+
         return $result;
     }
 
@@ -157,37 +173,64 @@ class Product extends db_connection
      * @param int|null $artisan_id Artisan ID (optional)
      * @return bool Success status
      */
-    public function updateProduct($product_id, $product_cat, $product_brand, $product_title, 
-                                  $product_price, $product_desc, $product_image, $product_keywords, $artisan_id = null)
-    {
+    public function updateProduct(
+        $product_id,
+        $product_cat,
+        $product_brand,
+        $product_title,
+        $product_price,
+        $product_desc,
+        $product_image,
+        $product_keywords,
+        $artisan_id = null
+    ) {
         // If image is null, don't update it (keep existing image)
         if ($product_image === null) {
             $stmt = $this->db->prepare("UPDATE products SET product_cat = ?, product_brand = ?, 
                                         product_title = ?, product_price = ?, product_desc = ?, 
                                         product_keywords = ?, artisan_id = ? WHERE product_id = ?");
-            
+
             if (!$stmt) {
                 return false;
             }
 
-            $stmt->bind_param("iisdssii", $product_cat, $product_brand, $product_title, 
-                             $product_price, $product_desc, $product_keywords, $artisan_id, $product_id);
+            $stmt->bind_param(
+                "iisdssii",
+                $product_cat,
+                $product_brand,
+                $product_title,
+                $product_price,
+                $product_desc,
+                $product_keywords,
+                $artisan_id,
+                $product_id
+            );
         } else {
             $stmt = $this->db->prepare("UPDATE products SET product_cat = ?, product_brand = ?, 
                                         product_title = ?, product_price = ?, product_desc = ?, 
                                         product_image = ?, product_keywords = ?, artisan_id = ? WHERE product_id = ?");
-            
+
             if (!$stmt) {
                 return false;
             }
 
-            $stmt->bind_param("iisdsssii", $product_cat, $product_brand, $product_title, 
-                             $product_price, $product_desc, $product_image, $product_keywords, $artisan_id, $product_id);
+            $stmt->bind_param(
+                "iisdsssii",
+                $product_cat,
+                $product_brand,
+                $product_title,
+                $product_price,
+                $product_desc,
+                $product_image,
+                $product_keywords,
+                $artisan_id,
+                $product_id
+            );
         }
-        
+
         $success = $stmt->execute();
         $stmt->close();
-        
+
         return $success;
     }
 
@@ -200,7 +243,7 @@ class Product extends db_connection
     {
         // First, get the image path to delete the file
         $product = $this->getProductById($product_id);
-        
+
         $stmt = $this->db->prepare("DELETE FROM products WHERE product_id = ?");
         if (!$stmt) {
             return false;
@@ -209,7 +252,7 @@ class Product extends db_connection
         $stmt->bind_param("i", $product_id);
         $success = $stmt->execute();
         $stmt->close();
-        
+
         // Delete image file if product was deleted successfully
         if ($success && $product && !empty($product['product_image'])) {
             $image_path = '../' . $product['product_image'];
@@ -217,7 +260,7 @@ class Product extends db_connection
                 unlink($image_path);
             }
         }
-        
+
         return $success;
     }
 
@@ -250,7 +293,7 @@ class Product extends db_connection
             WHERE p.product_cat = ? 
             ORDER BY p.product_title ASC
         ");
-        
+
         if (!$stmt) {
             return false;
         }
@@ -259,11 +302,11 @@ class Product extends db_connection
         $stmt->execute();
         $result = $stmt->get_result();
         $products = [];
-        
+
         while ($row = $result->fetch_assoc()) {
             $products[] = $row;
         }
-        
+
         $stmt->close();
         return $products;
     }
@@ -283,7 +326,7 @@ class Product extends db_connection
             WHERE p.product_brand = ? 
             ORDER BY p.product_title ASC
         ");
-        
+
         if (!$stmt) {
             return false;
         }
@@ -292,11 +335,11 @@ class Product extends db_connection
         $stmt->execute();
         $result = $stmt->get_result();
         $products = [];
-        
+
         while ($row = $result->fetch_assoc()) {
             $products[] = $row;
         }
-        
+
         $stmt->close();
         return $products;
     }
@@ -319,7 +362,7 @@ class Product extends db_connection
                OR p.product_keywords LIKE ?
             ORDER BY p.product_title ASC
         ");
-        
+
         if (!$stmt) {
             return false;
         }
@@ -328,11 +371,11 @@ class Product extends db_connection
         $stmt->execute();
         $result = $stmt->get_result();
         $products = [];
-        
+
         while ($row = $result->fetch_assoc()) {
             $products[] = $row;
         }
-        
+
         $stmt->close();
         return $products;
     }
@@ -382,7 +425,7 @@ class Product extends db_connection
             LEFT JOIN brands b ON p.product_brand = b.brand_id 
             WHERE p.product_id = ?
         ");
-        
+
         if (!$stmt) {
             return false;
         }
@@ -391,7 +434,7 @@ class Product extends db_connection
         $stmt->execute();
         $result = $stmt->get_result()->fetch_assoc();
         $stmt->close();
-        
+
         return $result;
     }
 
@@ -422,21 +465,29 @@ class Product extends db_connection
                 END,
                 p.product_title ASC
         ");
-        
+
         if (!$stmt) {
             return false;
         }
 
-        $stmt->bind_param("sssssss", $search_term, $search_term, $search_term, 
-                         $search_term, $search_term, $search_term, $search_term);
+        $stmt->bind_param(
+            "sssssss",
+            $search_term,
+            $search_term,
+            $search_term,
+            $search_term,
+            $search_term,
+            $search_term,
+            $search_term
+        );
         $stmt->execute();
         $result = $stmt->get_result();
         $products = [];
-        
+
         while ($row = $result->fetch_assoc()) {
             $products[] = $row;
         }
-        
+
         $stmt->close();
         return $products;
     }
@@ -456,7 +507,7 @@ class Product extends db_connection
             WHERE p.product_cat = ? 
             ORDER BY p.product_title ASC
         ");
-        
+
         if (!$stmt) {
             return false;
         }
@@ -465,11 +516,11 @@ class Product extends db_connection
         $stmt->execute();
         $result = $stmt->get_result();
         $products = [];
-        
+
         while ($row = $result->fetch_assoc()) {
             $products[] = $row;
         }
-        
+
         $stmt->close();
         return $products;
     }
@@ -489,7 +540,7 @@ class Product extends db_connection
             WHERE p.product_brand = ? 
             ORDER BY p.product_title ASC
         ");
-        
+
         if (!$stmt) {
             return false;
         }
@@ -498,11 +549,11 @@ class Product extends db_connection
         $stmt->execute();
         $result = $stmt->get_result();
         $products = [];
-        
+
         while ($row = $result->fetch_assoc()) {
             $products[] = $row;
         }
-        
+
         $stmt->close();
         return $products;
     }
@@ -523,7 +574,7 @@ class Product extends db_connection
             WHERE p.product_price BETWEEN ? AND ? 
             ORDER BY p.product_price ASC
         ");
-        
+
         if (!$stmt) {
             return false;
         }
@@ -532,11 +583,11 @@ class Product extends db_connection
         $stmt->execute();
         $result = $stmt->get_result();
         $products = [];
-        
+
         while ($row = $result->fetch_assoc()) {
             $products[] = $row;
         }
-        
+
         $stmt->close();
         return $products;
     }
@@ -556,7 +607,7 @@ class Product extends db_connection
             ORDER BY p.product_id DESC 
             LIMIT ?
         ");
-        
+
         if (!$stmt) {
             return false;
         }
@@ -565,11 +616,11 @@ class Product extends db_connection
         $stmt->execute();
         $result = $stmt->get_result();
         $products = [];
-        
+
         while ($row = $result->fetch_assoc()) {
             $products[] = $row;
         }
-        
+
         $stmt->close();
         return $products;
     }
@@ -582,13 +633,13 @@ class Product extends db_connection
     {
         $today_start = date('Y-m-d 00:00:00');
         $today_end = date('Y-m-d 23:59:59');
-        
+
         $stmt = $this->db->prepare("
             SELECT COUNT(*) as today_count 
             FROM products 
             WHERE created_at BETWEEN ? AND ?
         ");
-        
+
         if (!$stmt) {
             return 0;
         }
@@ -597,18 +648,18 @@ class Product extends db_connection
         $stmt->execute();
         $result = $stmt->get_result()->fetch_assoc();
         $stmt->close();
-        
-    return $result ? (int)$result['today_count'] : 0;
-}
 
-/**
- * Get all products by artisan
- * @param int $artisan_id Artisan ID
- * @return array|false Array of products or false on failure
- */
-public function getProductsByArtisan($artisan_id)
-{
-    $stmt = $this->db->prepare("
+        return $result ? (int)$result['today_count'] : 0;
+    }
+
+    /**
+     * Get all products by artisan
+     * @param int $artisan_id Artisan ID
+     * @return array|false Array of products or false on failure
+     */
+    public function getProductsByArtisan($artisan_id)
+    {
+        $stmt = $this->db->prepare("
         SELECT p.*, c.cat_name, b.brand_name 
         FROM products p 
         LEFT JOIN categories c ON p.product_cat = c.cat_id 
@@ -616,23 +667,23 @@ public function getProductsByArtisan($artisan_id)
         WHERE p.artisan_id = ? 
         ORDER BY p.product_id DESC
     ");
-    
-    if (!$stmt) {
-        return false;
-    }
 
-    $stmt->bind_param("i", $artisan_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $products = [];
-    
-    while ($row = $result->fetch_assoc()) {
-        $products[] = $row;
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param("i", $artisan_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $products = [];
+
+        while ($row = $result->fetch_assoc()) {
+            $products[] = $row;
+        }
+
+        $stmt->close();
+        return $products;
     }
-    
-    $stmt->close();
-    return $products;
-}
 
     /**
      * Count total products by artisan
@@ -642,7 +693,7 @@ public function getProductsByArtisan($artisan_id)
     public function countArtisanProducts($artisan_id)
     {
         $stmt = $this->db->prepare("SELECT COUNT(*) as count FROM products WHERE artisan_id = ?");
-        
+
         if (!$stmt) {
             return 0;
         }
@@ -651,7 +702,7 @@ public function getProductsByArtisan($artisan_id)
         $stmt->execute();
         $result = $stmt->get_result()->fetch_assoc();
         $stmt->close();
-        
+
         return $result ? (int)$result['count'] : 0;
     }
 
@@ -673,7 +724,7 @@ public function getProductsByArtisan($artisan_id)
             ORDER BY p.product_id DESC
             LIMIT ? OFFSET ?
         ");
-        
+
         if (!$stmt) {
             return false;
         }
@@ -682,11 +733,11 @@ public function getProductsByArtisan($artisan_id)
         $stmt->execute();
         $result = $stmt->get_result();
         $products = [];
-        
+
         while ($row = $result->fetch_assoc()) {
             $products[] = $row;
         }
-        
+
         $stmt->close();
         return $products;
     }
@@ -700,7 +751,7 @@ public function getProductsByArtisan($artisan_id)
     public function isArtisanProduct($product_id, $artisan_id)
     {
         $stmt = $this->db->prepare("SELECT artisan_id FROM products WHERE product_id = ?");
-        
+
         if (!$stmt) {
             return false;
         }
@@ -709,8 +760,7 @@ public function getProductsByArtisan($artisan_id)
         $stmt->execute();
         $result = $stmt->get_result()->fetch_assoc();
         $stmt->close();
-        
+
         return $result && $result['artisan_id'] == $artisan_id;
     }
 }
-?>

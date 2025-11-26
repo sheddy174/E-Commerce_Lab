@@ -1,25 +1,10 @@
 /**
  * Artisan Verification JavaScript
  * Handles verification actions for admin
+ * DataTables initialization (now in PHP file)
  */
 
 $(document).ready(function() {
-    
-    // Initialize DataTables
-    $('#pendingTable').DataTable({
-        pageLength: 10,
-        order: [[7, 'desc']] // Sort by applied date
-    });
-    
-    $('#verifiedTable').DataTable({
-        pageLength: 10,
-        order: [[6, 'desc']] // Sort by verified date
-    });
-    
-    $('#allTable').DataTable({
-        pageLength: 10,
-        order: [[0, 'desc']] // Sort by ID
-    });
     
     // Verify Artisan
     $(document).on('click', '.verify-btn', function() {
@@ -192,7 +177,7 @@ $(document).ready(function() {
                     </table>
                     
                     <h6 class="mt-3"><i class="fas fa-info-circle me-2"></i>Bio</h6>
-                    <p>${artisan.bio}</p>
+                    <p>${artisan.bio || 'No bio provided'}</p>
                 </div>
             </div>
         `;
