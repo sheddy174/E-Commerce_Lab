@@ -1,7 +1,7 @@
 <?php
 /**
- * Fetch Products Action Handler
- * Retrieves all products for display
+ * Fetch all products with category and brand information
+ * UPDATED: Now includes "added_today" count + proper logging
  */
 
 header('Content-Type: application/json');
@@ -12,47 +12,45 @@ require_once '../controllers/product_controller.php';
 
 $response = array();
 
-// Check if user is logged in and is admin
-if (!is_logged_in()) {
-    $response['status'] = 'error';
-    $response['message'] = 'Please login to continue';
-    echo json_encode($response);
-    exit();
-}
-
-if (!is_admin()) {
-    $response['status'] = 'error';
-    $response['message'] = 'Admin access required';
-    echo json_encode($response);
-    exit();
-}
-
 try {
-    // Get all products with category and brand information
+    // Check if user is admin
+    if (!is_admin()) {
+        $response['status'] = 'error';
+        $response['message'] = 'Unauthorized access';
+        error_log("Unauthorized product fetch attempt - User: " . (get_user_email() ?: 'Not logged in'));
+        echo json_encode($response);
+        exit();
+    }
+
+    // Fetch all products
     $products = get_all_products_ctr();
-    
+
     if ($products !== false) {
+        // Get count of products added today
+        $added_today = get_products_added_today_ctr();
+        
         $response['status'] = 'success';
-        $response['message'] = 'Products retrieved successfully';
         $response['data'] = $products;
-        $response['count'] = count($products);
-        $response['added_today'] = get_products_added_today_ctr(); // ADD THIS LINE
-        error_log("Products fetched successfully - Count: " . count($products) . ", User: " . get_user_email());
+        $response['added_today'] = $added_today;
+        $response['message'] = 'Products retrieved successfully';
+        
+        // Log successful fetch
+        error_log("Products fetched successfully - Count: " . count($products) . ", Added Today: " . $added_today . ", User: " . get_user_email());
     } else {
         $response['status'] = 'error';
-        $response['message'] = 'Failed to retrieve products';
+        $response['message'] = 'Failed to fetch products';
         $response['data'] = [];
-        $response['count'] = 0;
+        $response['added_today'] = 0;
         
-        error_log("Failed to fetch products, User: " . get_user_email());
+        error_log("Failed to fetch products - User: " . get_user_email());
     }
-    
+
 } catch (Exception $e) {
-    error_log("Fetch products exception: " . $e->getMessage());
     $response['status'] = 'error';
-    $response['message'] = 'System error occurred while retrieving products';
+    $response['message'] = 'An error occurred: ' . $e->getMessage();
     $response['data'] = [];
-    $response['count'] = 0;
+    $response['added_today'] = 0;
+    error_log("Product fetch error: " . $e->getMessage() . " - User: " . get_user_email());
 }
 
 echo json_encode($response);

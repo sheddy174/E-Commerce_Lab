@@ -1,7 +1,7 @@
 <?php
 /**
- * Fetch Brands Action Handler
- * Retrieves all brands for display
+ * Fetch all brands with product counts
+ * UPDATED: Now includes "added_today" count + proper logging
  */
 
 header('Content-Type: application/json');
@@ -12,48 +12,45 @@ require_once '../controllers/brand_controller.php';
 
 $response = array();
 
-// Check if user is logged in and is admin
-if (!is_logged_in()) {
-    $response['status'] = 'error';
-    $response['message'] = 'Please login to continue';
-    echo json_encode($response);
-    exit();
-}
-
-if (!is_admin()) {
-    $response['status'] = 'error';
-    $response['message'] = 'Admin access required';
-    echo json_encode($response);
-    exit();
-}
-
 try {
-    // Get brands with product counts
+    // Check if user is admin
+    if (!is_admin()) {
+        $response['status'] = 'error';
+        $response['message'] = 'Unauthorized access';
+        error_log("Unauthorized brand fetch attempt - User: " . (get_user_email() ?: 'Not logged in'));
+        echo json_encode($response);
+        exit();
+    }
+
+    // Fetch all brands with product counts
     $brands = get_brands_with_counts_ctr();
-    
+
     if ($brands !== false) {
-        $response['status'] = 'success';
-        $response['message'] = 'Brands retrieved successfully';
-        $response['data'] = $brands;
-        $response['count'] = count($brands);
-        $response['added_today'] = get_brands_added_today_ctr(); // ADD THIS LINE
+        // Get count of brands added today
+        $added_today = get_brands_added_today_ctr();
         
-        error_log("Brands fetched successfully - Count: " . count($brands) . ", User: " . get_user_email());
+        $response['status'] = 'success';
+        $response['data'] = $brands;
+        $response['added_today'] = $added_today;
+        $response['message'] = 'Brands retrieved successfully';
+        
+        // Log successful fetch
+        error_log("Brands fetched successfully - Count: " . count($brands) . ", Added Today: " . $added_today . ", User: " . get_user_email());
     } else {
         $response['status'] = 'error';
-        $response['message'] = 'Failed to retrieve brands';
+        $response['message'] = 'Failed to fetch brands';
         $response['data'] = [];
-        $response['count'] = 0;
+        $response['added_today'] = 0;
         
-        error_log("Failed to fetch brands, User: " . get_user_email());
+        error_log("Failed to fetch brands - User: " . get_user_email());
     }
-    
+
 } catch (Exception $e) {
-    error_log("Fetch brands exception: " . $e->getMessage());
     $response['status'] = 'error';
-    $response['message'] = 'System error occurred while retrieving brands';
+    $response['message'] = 'An error occurred: ' . $e->getMessage();
     $response['data'] = [];
-    $response['count'] = 0;
+    $response['added_today'] = 0;
+    error_log("Brand fetch error: " . $e->getMessage() . " - User: " . get_user_email());
 }
 
 echo json_encode($response);

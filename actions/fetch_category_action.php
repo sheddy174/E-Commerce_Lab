@@ -1,7 +1,7 @@
 <?php
 /**
- * Fetch Categories Action Handler
- * Retrieves all categories for display
+ * Fetch all categories with product counts
+ * UPDATED: Now includes "added_today" count + proper logging
  */
 
 header('Content-Type: application/json');
@@ -12,49 +12,45 @@ require_once '../controllers/category_controller.php';
 
 $response = array();
 
-// Check if user is logged in and is admin
-if (!is_logged_in()) {
-    $response['status'] = 'error';
-    $response['message'] = 'Please login to continue';
-    echo json_encode($response);
-    exit();
-}
-
-if (!is_admin()) {
-    $response['status'] = 'error';
-    $response['message'] = 'Admin access required';
-    echo json_encode($response);
-    exit();
-}
-
 try {
-    // Get categories with product counts
-    $categories = get_categories_with_counts_ctr();
-    
-    if ($categories !== false) {
-        $response['status'] = 'success';
-        $response['message'] = 'Categories retrieved successfully';
-        $response['data'] = $categories;
-        $response['count'] = count($categories);
-        $response['added_today'] = get_categories_added_today_ctr(); // ADD THIS LINE
+    // Check if user is admin
+    if (!is_admin()) {
+        $response['status'] = 'error';
+        $response['message'] = 'Unauthorized access';
+        error_log("Unauthorized category fetch attempt - User: " . (get_user_email() ?: 'Not logged in'));
+        echo json_encode($response);
+        exit();
+    }
 
+    // Fetch all categories with product counts
+    $categories = get_categories_with_counts_ctr();
+
+    if ($categories !== false) {
+        // Get count of categories added today
+        $added_today = get_categories_added_today_ctr();
         
-        error_log("Categories fetched successfully - Count: " . count($categories) . ", User: " . get_user_email());
+        $response['status'] = 'success';
+        $response['data'] = $categories;
+        $response['added_today'] = $added_today;
+        $response['message'] = 'Categories retrieved successfully';
+        
+        // Log successful fetch
+        error_log("Categories fetched successfully - Count: " . count($categories) . ", Added Today: " . $added_today . ", User: " . get_user_email());
     } else {
         $response['status'] = 'error';
-        $response['message'] = 'Failed to retrieve categories';
+        $response['message'] = 'Failed to fetch categories';
         $response['data'] = [];
-        $response['count'] = 0;
+        $response['added_today'] = 0;
         
-        error_log("Failed to fetch categories, User: " . get_user_email());
+        error_log("Failed to fetch categories - User: " . get_user_email());
     }
-    
+
 } catch (Exception $e) {
-    error_log("Fetch categories exception: " . $e->getMessage());
     $response['status'] = 'error';
-    $response['message'] = 'System error occurred while retrieving categories';
+    $response['message'] = 'An error occurred: ' . $e->getMessage();
     $response['data'] = [];
-    $response['count'] = 0;
+    $response['added_today'] = 0;
+    error_log("Category fetch error: " . $e->getMessage() . " - User: " . get_user_email());
 }
 
 echo json_encode($response);
