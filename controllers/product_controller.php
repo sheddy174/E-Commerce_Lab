@@ -477,4 +477,54 @@ function get_products_added_today_ctr()
         return 0;
     }
 }
+
+/**
+ * Add product with artisan and status
+ * @param int $cat_id Category ID
+ * @param int $brand_id Brand ID
+ * @param string $title Product title
+ * @param float $price Product price
+ * @param string $desc Product description
+ * @param string|null $image Product image path
+ * @param string $keywords Product keywords
+ * @param int|null $artisan_id Artisan ID (NULL for admin products)
+ * @param string $status Product status (active/pending)
+ * @return int|false Product ID if successful, false otherwise
+ */
+function add_product_with_artisan_ctr($cat_id, $brand_id, $title, $price, $desc, $image, $keywords, $artisan_id = null, $status = 'active')
+{
+    try {
+        require_once '../classes/product_class.php';
+        $product = new Product();
+        return $product->addProductWithArtisan($cat_id, $brand_id, $title, $price, $desc, $image, $keywords, $artisan_id, $status);
+    } catch (Exception $e) {
+        error_log("Add product with artisan exception: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Update product with status
+ * @param int $product_id Product ID
+ * @param int $cat_id Category ID
+ * @param int $brand_id Brand ID
+ * @param string $title Product title
+ * @param float $price Product price
+ * @param string $desc Product description
+ * @param string $image Product image path
+ * @param string $keywords Product keywords
+ * @param string $status Product status
+ * @return bool Success status
+ */
+function update_product_with_status_ctr($product_id, $cat_id, $brand_id, $title, $price, $desc, $image, $keywords, $status)
+{
+    try {
+        require_once '../classes/product_class.php';
+        $product = new Product();
+        return $product->updateProductWithStatus($product_id, $cat_id, $brand_id, $title, $price, $desc, $image, $keywords, $status);
+    } catch (Exception $e) {
+        error_log("Update product with status exception: " . $e->getMessage());
+        return false;
+    }
+}
 ?>

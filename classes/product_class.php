@@ -763,4 +763,82 @@ class Product extends db_connection
 
         return $result && $result['artisan_id'] == $artisan_id;
     }
+
+    /**
+     * Add product with artisan and status
+     * @param int $cat_id Category ID
+     * @param int $brand_id Brand ID
+     * @param string $title Product title
+     * @param float $price Product price
+     * @param string $desc Product description
+     * @param string|null $image Product image path
+     * @param string $keywords Product keywords
+     * @param int|null $artisan_id Artisan ID (NULL for admin)
+     * @param string $status Product status
+     * @return int|false Product ID or false
+     */
+    public function addProductWithArtisan($cat_id, $brand_id, $title, $price, $desc, $image, $keywords, $artisan_id = null, $status = 'active')
+    {
+        $stmt = $this->db->prepare("
+            INSERT INTO products (product_cat, product_brand, product_title, product_price, product_desc, product_image, product_keywords, artisan_id, status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        
+        if (!$stmt) {
+            error_log("Prepare failed: " . $this->db->error);
+            return false;
+        }
+    
+        $stmt->bind_param("iisdsssss", $cat_id, $brand_id, $title, $price, $desc, $image, $keywords, $artisan_id, $status);
+        
+        if ($stmt->execute()) {
+            $product_id = $this->db->insert_id;
+            $stmt->close();
+            error_log("Product added - ID: {$product_id}, Artisan: " . ($artisan_id ?? 'NULL') . ", Status: {$status}");
+            return $product_id;
+        }
+        
+        error_log("Execute failed: " . $stmt->error);
+        $stmt->close();
+        return false;
+    }
+    
+    /**
+     * Update product with status
+     * @param int $product_id Product ID
+     * @param int $cat_id Category ID
+     * @param int $brand_id Brand ID
+     * @param string $title Product title
+     * @param float $price Product price
+     * @param string $desc Product description
+     * @param string $image Product image path
+     * @param string $keywords Product keywords
+     * @param string $status Product status
+     * @return bool Success status
+     */
+    public function updateProductWithStatus($product_id, $cat_id, $brand_id, $title, $price, $desc, $image, $keywords, $status)
+    {
+        $stmt = $this->db->prepare("
+            UPDATE products 
+            SET product_cat = ?, product_brand = ?, product_title = ?, product_price = ?, 
+                product_desc = ?, product_image = ?, product_keywords = ?, status = ?
+            WHERE product_id = ?
+        ");
+        
+        if (!$stmt) {
+            error_log("Prepare failed: " . $this->db->error);
+            return false;
+        }
+    
+        $stmt->bind_param("iisdssssi", $cat_id, $brand_id, $title, $price, $desc, $image, $keywords, $status, $product_id);
+        $success = $stmt->execute();
+        
+        if (!$success) {
+            error_log("Execute failed: " . $stmt->error);
+        }
+        
+        $stmt->close();
+        return $success;
+    }
 }
+?>

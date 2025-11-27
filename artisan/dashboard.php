@@ -265,23 +265,28 @@ switch ($verification_status) {
         <!-- Alert Container -->
         <div id="alertContainer"></div>
 
-        <!-- Verification Status Alert -->
+        <!-- Verification Status Alert - Shows all statuses with dismiss buttons -->
         <?php if ($verification_status === 'pending'): ?>
-        <div class="alert alert-warning verification-alert">
+        <div class="alert alert-warning verification-alert alert-dismissible fade show" role="alert">
             <i class="fas fa-clock me-2"></i>
             <strong>Verification Pending:</strong> Your artisan account is awaiting verification by our admin team. 
             You can view your dashboard but cannot add products until verified.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
+        
         <?php elseif ($verification_status === 'rejected'): ?>
-        <div class="alert alert-danger verification-alert">
+        <div class="alert alert-danger verification-alert alert-dismissible fade show" role="alert">
             <i class="fas fa-times-circle me-2"></i>
             <strong>Verification Rejected:</strong> Your artisan application was not approved. 
-            Please contact support for more information.
+            Please contact support at <strong>support@ghanatunes.com</strong> for more information.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
+        
         <?php elseif ($verification_status === 'verified'): ?>
-        <div class="alert alert-success verification-alert">
+        <div class="alert alert-success verification-alert alert-dismissible fade show" role="alert" id="verifiedAlert">
             <i class="fas fa-check-circle me-2"></i>
             <strong>Verified Artisan:</strong> Your account is verified! You can now add and manage products.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         <?php endif; ?>
 
