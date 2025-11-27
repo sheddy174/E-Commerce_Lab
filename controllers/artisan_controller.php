@@ -34,13 +34,18 @@ function create_artisan_profile_ctr($artisan_data)
 /**
  * Get artisan profile by customer ID
  * @param int $customer_id Customer ID
- * @return array|false Profile data on success, false on failure
+ * @return array|false Artisan profile data
  */
 function get_artisan_profile_ctr($customer_id)
 {
     try {
+        if (!is_numeric($customer_id) || $customer_id <= 0) {
+            return false;
+        }
+
+        require_once '../classes/artisan_class.php';
         $artisan = new Artisan();
-        return $artisan->getArtisanProfile($customer_id);
+        return $artisan->getArtisanByCustomerId($customer_id);
     } catch (Exception $e) {
         error_log("Get artisan profile exception: " . $e->getMessage());
         return false;

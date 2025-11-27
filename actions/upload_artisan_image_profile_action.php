@@ -2,13 +2,14 @@
 /**
  * Upload Artisan Profile Image Action Handler
  * Handles ONLY artisan profile images (not products)
- * FIXED: Simplified and focused on profile images only
+ * FIXED: Now properly updates database
  */
 
 header('Content-Type: application/json');
 session_start();
 
 require_once '../settings/core.php';
+require_once '../controllers/customer_controller.php';
 
 $response = array();
 
@@ -35,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-// Check if file was uploaded - FIXED: Changed from 'image' to 'profile_image'
+// Check if file was uploaded
 if (!isset($_FILES['profile_image']) || $_FILES['profile_image']['error'] === UPLOAD_ERR_NO_FILE) {
     $response['status'] = 'error';
     $response['message'] = 'No image file uploaded';
@@ -131,16 +132,21 @@ if (move_uploaded_file($file_tmp, $destination)) {
     // Store relative path (for database and web access)
     $relative_path = 'uploads/' . $user_folder . $unique_filename;
     
-    // TODO: Update customer_image in database
-    require_once '../controllers/customer_controller.php';
-    update_customer_image_ctr($user_id, $relative_path);
+    // CRITICAL: Update customer_image in database
+    $update_result = update_customer_image_ctr($user_id, $relative_path);
     
-    $response['status'] = 'success';
-    $response['message'] = 'Profile image uploaded successfully';
-    $response['image_path'] = $relative_path;
-    $response['file_name'] = $unique_filename;
-    
-    error_log("Artisan profile image uploaded - Path: {$relative_path}, User: " . get_user_email());
+    if ($update_result) {
+        $response['status'] = 'success';
+        $response['message'] = 'Profile image uploaded successfully';
+        $response['image_path'] = $relative_path;
+        $response['file_name'] = $unique_filename;
+        
+        error_log("Artisan profile image uploaded and saved - Path: {$relative_path}, User: " . get_user_email());
+    } else {
+        $response['status'] = 'error';
+        $response['message'] = 'Image uploaded but failed to update database';
+        error_log("Failed to update database with image path - User ID: {$user_id}, Path: {$relative_path}");
+    }
 } else {
     $response['status'] = 'error';
     $response['message'] = 'Failed to move uploaded file';
