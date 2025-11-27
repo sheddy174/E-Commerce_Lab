@@ -178,6 +178,16 @@ switch ($verification_status) {
             transform: scale(1.1);
         }
         
+        /* ADDED: Preview image styling */
+        .profile-image-preview {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--success-color);
+            display: none;
+        }
+        
         .verification-alert {
             border-radius: 0.5rem;
             padding: 1rem;
@@ -330,22 +340,44 @@ switch ($verification_status) {
                         <i class="fas fa-user me-2"></i>Artisan Profile
                     </div>
                     <div class="card-body text-center">
-                        <!-- Profile Image -->
+                        <!-- FIXED: Profile Image Upload Structure -->
                         <div class="profile-image-container">
                             <?php
                             $profile_image = !empty($artisan_profile['profile_image']) 
                                 ? '../../' . $artisan_profile['profile_image']
                                 : 'https://ui-avatars.com/api/?name=' . urlencode($customer_name) . '&size=150&background=F18F01&color=fff';
                             ?>
+                            <!-- Current Profile Image -->
                             <img src="<?php echo htmlspecialchars($profile_image); ?>" 
                                  alt="Profile" 
                                  class="profile-image"
                                  id="currentProfileImage">
-                            <label for="profileImageInput" class="profile-image-overlay">
+                            
+                            <!-- Preview Image (shown after selecting new image) -->
+                            <img src="" 
+                                 alt="Preview" 
+                                 class="profile-image-preview"
+                                 id="profileImagePreview">
+                            
+                            <!-- Camera Icon Overlay -->
+                            <label for="profileImageInput" class="profile-image-overlay" title="Change profile picture">
                                 <i class="fas fa-camera"></i>
                             </label>
-                            <input type="file" id="profileImageInput" style="display: none;" accept="image/*">
+                            
+                            <!-- Hidden File Input -->
+                            <input type="file" 
+                                   id="profileImageInput" 
+                                   accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                                   style="display: none;">
                         </div>
+
+                        <!-- Upload Button (shown after selecting image) -->
+                        <button type="button" 
+                                id="uploadProfileImageBtn" 
+                                class="btn btn-success btn-sm mb-3"
+                                style="display: none;">
+                            <i class="fas fa-upload me-2"></i>Upload New Image
+                        </button>
 
                         <h5><?php echo htmlspecialchars($customer_name); ?></h5>
                         <p class="text-muted mb-3"><?php echo htmlspecialchars($artisan_profile['shop_name']); ?></p>
@@ -511,9 +543,6 @@ switch ($verification_status) {
             </div>
         </div>
     </div>
-
-    <!-- Hidden button for profile image upload -->
-    <button id="uploadProfileImageBtn" style="display: none;"></button>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

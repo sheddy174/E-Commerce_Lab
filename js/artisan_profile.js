@@ -1,22 +1,25 @@
 /**
  * Artisan Profile Management JavaScript
- * Handles profile image uploads and profile updates
- * FIXED: Correct FormData field name and proper image handling
+ * FIXED: Modeled after working product.js pattern
  */
 
 $(document).ready(function() {
+    console.log('Artisan profile JS loaded');
     
     // ==========================================
-    // PROFILE IMAGE UPLOAD - FIXED
+    // PROFILE IMAGE UPLOAD - FIXED PATTERN
     // ==========================================
     
     /**
-     * Preview profile image before upload
+     * Handle file selection - show preview
      */
     $('#profileImageInput').change(function() {
+        console.log('File input changed');
         const file = this.files[0];
         
         if (file) {
+            console.log('File selected:', file.name, file.size, file.type);
+            
             // Validate file
             const validation = validateImageFile(file);
             if (!validation.isValid) {
@@ -25,20 +28,25 @@ $(document).ready(function() {
                 return;
             }
             
-            // Show preview
+            // Show preview using FileReader
             const reader = new FileReader();
             reader.onload = function(e) {
+                console.log('File loaded, showing preview');
+                // Hide current image, show preview
+                $('#currentProfileImage').hide();
                 $('#profileImagePreview').attr('src', e.target.result).show();
-                $('#uploadProfileImageBtn').prop('disabled', false);
+                // Show upload button
+                $('#uploadProfileImageBtn').show();
             };
             reader.readAsDataURL(file);
         }
     });
     
     /**
-     * Upload profile image - FIXED
+     * Handle upload button click
      */
     $('#uploadProfileImageBtn').click(function() {
+        console.log('Upload button clicked');
         const fileInput = $('#profileImageInput')[0];
         const file = fileInput.files[0];
         
@@ -47,8 +55,8 @@ $(document).ready(function() {
             return;
         }
         
+        // Create FormData
         const formData = new FormData();
-        // FIXED: Changed 'image' to 'profile_image' to match action file expectations
         formData.append('profile_image', file);
         
         const btn = $(this);
@@ -61,25 +69,25 @@ $(document).ready(function() {
             data: formData,
             processData: false,
             contentType: false,
-            cache: false,  // Added
+            cache: false,
             dataType: 'json',
             success: function(response) {
-                console.log('Upload response:', response);  // Debug
+                console.log('Upload response:', response);
                 btn.prop('disabled', false).html(originalText);
                 
                 if (response.status === 'success') {
                     showAlert('success', response.message);
                     
-                    // FIXED: Update the displayed image with proper path
+                    // Update both images
                     const imagePath = '../../' + response.image_path;
-                    $('#currentProfileImage').attr('src', imagePath);
-                    $('#profileImagePreview').attr('src', imagePath).show();
+                    $('#currentProfileImage').attr('src', imagePath).show();
+                    $('#profileImagePreview').attr('src', imagePath).hide();
+                    $('#uploadProfileImageBtn').hide();
                     
                     // Clear the file input
                     fileInput.value = '';
-                    $('#uploadProfileImageBtn').prop('disabled', true);
                     
-                    // Reload after short delay
+                    // Reload page after short delay
                     setTimeout(() => location.reload(), 1500);
                 } else {
                     showAlert('error', response.message || 'Failed to upload image');
@@ -89,7 +97,8 @@ $(document).ready(function() {
                 console.error('Upload error:', {
                     status: status,
                     error: error,
-                    responseText: xhr.responseText
+                    responseText: xhr.responseText,
+                    statusCode: xhr.status
                 });
                 btn.prop('disabled', false).html(originalText);
                 
@@ -102,6 +111,8 @@ $(document).ready(function() {
                 } catch (e) {
                     if (xhr.status === 413) {
                         errorMessage = 'File too large. Maximum size is 5MB.';
+                    } else if (xhr.status === 500) {
+                        errorMessage = 'Server error. Check error logs for details.';
                     }
                 }
                 
@@ -136,6 +147,9 @@ $(document).ready(function() {
                 
                 if (response.status === 'success') {
                     showAlert('success', response.message);
+                    // Close modal
+                    $('#editProfileModal').modal('hide');
+                    // Reload page
                     setTimeout(() => location.reload(), 1500);
                 } else {
                     showAlert('error', response.message);
@@ -202,7 +216,7 @@ $(document).ready(function() {
     /**
      * Character counter for bio textarea
      */
-    $('#bio').on('input', function() {
+    $('#edit_bio').on('input', function() {
         const length = $(this).val().length;
         const minLength = 50;
         
