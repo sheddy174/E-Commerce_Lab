@@ -413,3 +413,25 @@ function get_verification_documents_ctr($artisan_id)
         return false;
     }
 }
+
+/**
+ * Get artisan by customer ID
+ * @param int $customer_id Customer ID
+ * @return array|false Artisan data or false if not found
+ */
+function get_artisan_by_customer_id_ctr($customer_id)
+{
+    try {
+        if (!is_numeric($customer_id) || $customer_id <= 0) {
+            return false;
+        }
+
+        require_once '../classes/artisan_class.php';
+        $artisan = new Artisan();
+        return $artisan->getArtisanByCustomerId($customer_id);
+    } catch (Exception $e) {
+        error_log("Get artisan by customer ID exception: " . $e->getMessage());
+        return false;
+    }
+}
+?>

@@ -457,4 +457,32 @@ class Artisan extends db_connection
 
         return $result;
     }
+
+    /**
+     * Get artisan by customer ID
+     * @param int $customer_id Customer ID
+     * @return array|false Artisan data or false if not found
+     */
+    public function getArtisanByCustomerId($customer_id)
+    {
+        $stmt = $this->db->prepare("
+            SELECT a.*, c.customer_name, c.customer_email, c.customer_contact, 
+                   c.customer_city, c.customer_country, c.customer_image as profile_image
+            FROM artisan_profiles a
+            JOIN customer c ON a.customer_id = c.customer_id
+            WHERE a.customer_id = ?
+        ");
+        
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param("i", $customer_id);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        
+        return $result;
+    }
 }
+?>

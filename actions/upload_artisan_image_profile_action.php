@@ -1,7 +1,8 @@
 <?php
 /**
- * Upload Artisan Image Action Handler
- * Handles artisan profile images and product images with organized folder structure
+ * Upload Artisan Profile Image Action Handler
+ * Handles ONLY artisan profile images (not products)
+ * FIXED: Simplified and focused on profile images only
  */
 
 header('Content-Type: application/json');
@@ -34,24 +35,25 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-// Check if file was uploaded
-if (!isset($_FILES['image']) || $_FILES['image']['error'] === UPLOAD_ERR_NO_FILE) {
+// Check if file was uploaded - FIXED: Changed from 'image' to 'profile_image'
+if (!isset($_FILES['profile_image']) || $_FILES['profile_image']['error'] === UPLOAD_ERR_NO_FILE) {
     $response['status'] = 'error';
     $response['message'] = 'No image file uploaded';
+    error_log("No file uploaded - FILES: " . print_r($_FILES, true));
     echo json_encode($response);
     exit();
 }
 
 // Check for upload errors
-if ($_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+if ($_FILES['profile_image']['error'] !== UPLOAD_ERR_OK) {
     $response['status'] = 'error';
-    $response['message'] = 'Error uploading file: ' . $_FILES['image']['error'];
+    $response['message'] = 'Error uploading file: ' . $_FILES['profile_image']['error'];
     echo json_encode($response);
     exit();
 }
 
 // Get file information
-$file = $_FILES['image'];
+$file = $_FILES['profile_image'];
 $file_name = $file['name'];
 $file_tmp = $file['tmp_name'];
 $file_size = $file['size'];
@@ -79,37 +81,13 @@ if ($file_size > $max_file_size) {
     exit();
 }
 
-// Get user ID and image type (profile or product)
+// Get user ID
 $user_id = get_user_id();
-$image_type = isset($_POST['image_type']) ? trim($_POST['image_type']) : 'profile';
-$product_id = isset($_POST['product_id']) ? (int)$_POST['product_id'] : 0;
-
-// Validate image type
-if (!in_array($image_type, ['profile', 'product'])) {
-    $response['status'] = 'error';
-    $response['message'] = 'Invalid image type. Must be "profile" or "product"';
-    echo json_encode($response);
-    exit();
-}
-
-// For new products (product_id = 0), use temporary ID or timestamp
-if ($image_type === 'product' && $product_id === 0) {
-    $product_id = 'temp_' . time();
-}
 
 // CRITICAL FIX: uploads/ is at web root, project is in E-Commerce_Lab/
-// From actions/ folder, go UP to E-Commerce_Lab/, then UP to web root, then into uploads/
 $upload_base = dirname(dirname(__DIR__)) . '/uploads/';
-$user_folder = 'u' . $user_id . '/artisan/';
-
-// Determine specific folder based on image type
-if ($image_type === 'profile') {
-    $specific_folder = 'profile/';
-} else {
-    $specific_folder = 'products/p' . $product_id . '/';
-}
-
-$full_path = $upload_base . $user_folder . $specific_folder;
+$user_folder = 'u' . $user_id . '/artisan/profile/';
+$full_path = $upload_base . $user_folder;
 
 // Verify upload base exists
 if (!file_exists($upload_base)) {
@@ -126,11 +104,9 @@ if (!file_exists($full_path)) {
         $response['status'] = 'error';
         $response['message'] = 'Failed to create upload directory';
         error_log("Failed to create directory: " . $full_path);
-        error_log("Parent writable: " . (is_writable(dirname($full_path)) ? 'yes' : 'no'));
         echo json_encode($response);
         exit();
     }
-    // Set directory permissions explicitly
     chmod($full_path, 0755);
 }
 
@@ -143,9 +119,8 @@ if (!is_writable($full_path)) {
     exit();
 }
 
-// Generate unique filename to prevent overwrites
-$prefix = $image_type === 'profile' ? 'profile_' : 'product_';
-$unique_filename = $prefix . time() . '_' . uniqid() . '.' . $file_ext;
+// Generate unique filename
+$unique_filename = 'profile_' . time() . '_' . uniqid() . '.' . $file_ext;
 $destination = $full_path . $unique_filename;
 
 // Move uploaded file
@@ -154,17 +129,18 @@ if (move_uploaded_file($file_tmp, $destination)) {
     chmod($destination, 0644);
     
     // Store relative path (for database and web access)
-    $relative_path = 'uploads/' . $user_folder . $specific_folder . $unique_filename;
+    $relative_path = 'uploads/' . $user_folder . $unique_filename;
+    
+    // TODO: Update customer_image in database
+    require_once '../controllers/customer_controller.php';
+    update_customer_image_ctr($user_id, $relative_path);
     
     $response['status'] = 'success';
-    $response['message'] = ucfirst($image_type) . ' image uploaded successfully';
+    $response['message'] = 'Profile image uploaded successfully';
     $response['image_path'] = $relative_path;
     $response['file_name'] = $unique_filename;
-    $response['image_type'] = $image_type;
     
-    // Log activity
-    log_activity("Artisan uploaded {$image_type} image: {$relative_path}", 'info');
-    error_log("Artisan image uploaded - Type: {$image_type}, Path: {$relative_path}, User: " . get_user_email());
+    error_log("Artisan profile image uploaded - Path: {$relative_path}, User: " . get_user_email());
 } else {
     $response['status'] = 'error';
     $response['message'] = 'Failed to move uploaded file';

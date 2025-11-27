@@ -19,9 +19,9 @@ function register_customer_ctr($name, $email, $password, $country, $city, $conta
     try {
         $customer = new Customer();
         $result = $customer->addCustomer($name, $email, $password, $country, $city, $contact, $role);
-        
+
         error_log("Registration attempt for email: " . $email . " - Result: " . ($result ? 'Success' : 'Failed'));
-        
+
         return $result;
     } catch (Exception $e) {
         error_log("Registration exception: " . $e->getMessage());
@@ -36,20 +36,19 @@ function login_customer_ctr($email, $password)
 {
     try {
         $customer = new Customer();
-        
+
         error_log("Controller: Attempting login for email: " . $email);
-        
+
         $login_result = $customer->validateLogin($email, $password);
-        
+
         error_log("Controller: Validation result - Success: " . ($login_result['success'] ? 'true' : 'false'));
-        
+
         if ($login_result['success']) {
             $update_result = $customer->updateLastLogin($login_result['customer']['customer_id']);
             error_log("Controller: Last login update result: " . ($update_result ? 'Success' : 'Failed'));
         }
-        
+
         return $login_result;
-        
     } catch (Exception $e) {
         error_log("Login controller exception: " . $e->getMessage());
         return [
@@ -82,9 +81,9 @@ function check_email_exists_ctr($email)
     try {
         $customer = new Customer();
         $exists = $customer->emailExists($email);
-        
+
         error_log("Email check for " . $email . ": " . ($exists ? 'EXISTS' : 'AVAILABLE'));
-        
+
         return $exists;
     } catch (Exception $e) {
         error_log("Email check exception: " . $e->getMessage());
@@ -155,7 +154,7 @@ function test_db_connection_ctr()
     try {
         $customer = new Customer();
         $connection = $customer->db_conn();
-        
+
         if ($connection) {
             return [
                 'success' => true,
@@ -173,6 +172,40 @@ function test_db_connection_ctr()
             'success' => false,
             'message' => 'Database connection exception: ' . $e->getMessage()
         ];
+    }
+}
+
+/**
+ * Update customer profile image
+ * @param int $customer_id Customer ID
+ * @param string $image_path Image path
+ * @return bool Success status
+ */
+function update_customer_image_ctr($customer_id, $image_path)
+{
+    try {
+        if (!is_numeric($customer_id) || $customer_id <= 0) {
+            return false;
+        }
+
+        require_once '../classes/customer_class.php';
+        $customer = new Customer();
+
+        $stmt = $customer->db->prepare("UPDATE customer SET customer_image = ? WHERE customer_id = ?");
+        if (!$stmt) {
+            return false;
+        }
+
+        $stmt->bind_param("si", $image_path, $customer_id);
+        $success = $stmt->execute();
+        $stmt->close();
+
+        error_log("Customer image updated - ID: {$customer_id}, Path: {$image_path}");
+
+        return $success;
+    } catch (Exception $e) {
+        error_log("Update customer image exception: " . $e->getMessage());
+        return false;
     }
 }
 ?>

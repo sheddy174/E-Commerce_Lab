@@ -1,12 +1,13 @@
 /**
  * Artisan Profile Management JavaScript
  * Handles profile image uploads and profile updates
+ * FIXED: Correct FormData field name and proper image handling
  */
 
 $(document).ready(function() {
     
     // ==========================================
-    // PROFILE IMAGE UPLOAD
+    // PROFILE IMAGE UPLOAD - FIXED
     // ==========================================
     
     /**
@@ -27,7 +28,7 @@ $(document).ready(function() {
             // Show preview
             const reader = new FileReader();
             reader.onload = function(e) {
-                $('#profileImagePreview').attr('src', e.target.result);
+                $('#profileImagePreview').attr('src', e.target.result).show();
                 $('#uploadProfileImageBtn').prop('disabled', false);
             };
             reader.readAsDataURL(file);
@@ -35,7 +36,7 @@ $(document).ready(function() {
     });
     
     /**
-     * Upload profile image
+     * Upload profile image - FIXED
      */
     $('#uploadProfileImageBtn').click(function() {
         const fileInput = $('#profileImageInput')[0];
@@ -47,43 +48,64 @@ $(document).ready(function() {
         }
         
         const formData = new FormData();
-        formData.append('image', file);
-        formData.append('image_type', 'profile');
+        // FIXED: Changed 'image' to 'profile_image' to match action file expectations
+        formData.append('profile_image', file);
         
         const btn = $(this);
         const originalText = btn.html();
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Uploading...');
         
         $.ajax({
-            url: '../actions/upload_artisan_image_action.php',
+            url: '../actions/upload_artisan_profile_image_action.php',
             type: 'POST',
             data: formData,
             processData: false,
             contentType: false,
+            cache: false,  // Added
             dataType: 'json',
             success: function(response) {
+                console.log('Upload response:', response);  // Debug
                 btn.prop('disabled', false).html(originalText);
                 
                 if (response.status === 'success') {
                     showAlert('success', response.message);
                     
-                    // Update the displayed image
-                    $('#currentProfileImage').attr('src', '../../' + response.image_path);
+                    // FIXED: Update the displayed image with proper path
+                    const imagePath = '../../' + response.image_path;
+                    $('#currentProfileImage').attr('src', imagePath);
+                    $('#profileImagePreview').attr('src', imagePath).show();
                     
                     // Clear the file input
                     fileInput.value = '';
                     $('#uploadProfileImageBtn').prop('disabled', true);
                     
-                    // Optionally reload page after delay
-                    setTimeout(() => location.reload(), 2000);
+                    // Reload after short delay
+                    setTimeout(() => location.reload(), 1500);
                 } else {
-                    showAlert('error', response.message);
+                    showAlert('error', response.message || 'Failed to upload image');
                 }
             },
             error: function(xhr, status, error) {
+                console.error('Upload error:', {
+                    status: status,
+                    error: error,
+                    responseText: xhr.responseText
+                });
                 btn.prop('disabled', false).html(originalText);
-                console.error('Upload error:', error);
-                showAlert('error', 'Error uploading image. Please try again.');
+                
+                let errorMessage = 'Error uploading image. Please try again.';
+                try {
+                    const errorResponse = JSON.parse(xhr.responseText);
+                    if (errorResponse.message) {
+                        errorMessage = errorResponse.message;
+                    }
+                } catch (e) {
+                    if (xhr.status === 413) {
+                        errorMessage = 'File too large. Maximum size is 5MB.';
+                    }
+                }
+                
+                showAlert('error', errorMessage);
             }
         });
     });
@@ -114,9 +136,7 @@ $(document).ready(function() {
                 
                 if (response.status === 'success') {
                     showAlert('success', response.message);
-                    
-                    // Optionally reload page
-                    setTimeout(() => location.reload(), 2000);
+                    setTimeout(() => location.reload(), 1500);
                 } else {
                     showAlert('error', response.message);
                 }
