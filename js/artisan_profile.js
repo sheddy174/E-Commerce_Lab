@@ -64,7 +64,7 @@ $(document).ready(function() {
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Uploading...');
         
         $.ajax({
-            url: '../actions/upload_artisan_profile_image_action.php',
+            url: '../actions/upload_artisan_image_ profile_action.php',
             type: 'POST',
             data: formData,
             processData: false,
