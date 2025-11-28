@@ -2,6 +2,7 @@
 /**
  * Fetch all brands (accessible by admin AND artisans)
  * Admins can fetch for management, artisans can fetch for product creation
+ * FIXED: Now uses get_brands_with_counts_ctr() to include product_count
  */
 
 header('Content-Type: application/json');
@@ -30,11 +31,11 @@ try {
         exit();
     }
 
-    // Fetch brands with category info
-    $brands = get_all_brands_ctr();
+    // FIXED: Fetch brands with category info AND product counts
+    $brands = get_brands_with_counts_ctr();
 
     if ($brands !== false) {
-        // If artisan, only return basic data (no "added_today" stats)
+        // If artisan, return basic data (no "added_today" stats)
         if (is_artisan()) {
             $response['status'] = 'success';
             $response['data'] = $brands;
