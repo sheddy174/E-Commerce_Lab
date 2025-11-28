@@ -13,7 +13,7 @@ require_once '../settings/core.php';
 
 $response = array();
 
-// Check if user is logged in and is admin
+// Check if user is logged in
 if (!is_logged_in()) {
     $response['status'] = 'error';
     $response['message'] = 'Please login to continue';
@@ -21,12 +21,14 @@ if (!is_logged_in()) {
     exit();
 }
 
-if (!is_admin()) {
+// Allow both admins and artisans
+if (!is_admin() && !is_artisan()) {
     $response['status'] = 'error';
-    $response['message'] = 'Admin access required';
+    $response['message'] = 'Access denied';
     echo json_encode($response);
     exit();
 }
+
 
 // Only process POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
