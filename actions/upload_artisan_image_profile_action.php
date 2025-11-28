@@ -1,19 +1,17 @@
 <?php
 /**
  * Upload Artisan Profile Image Action Handler
- * Handles ONLY artisan profile images (not products)
- * FIXED: Now properly updates database
+ * CORRECTED VERSION - Includes database update after upload
  */
 
 header('Content-Type: application/json');
 session_start();
 
 require_once '../settings/core.php';
-require_once '../controllers/customer_controller.php';
 
 $response = array();
 
-// Check if user is logged in and is artisan
+// Check if user is logged in
 if (!is_logged_in()) {
     $response['status'] = 'error';
     $response['message'] = 'Please login to continue';
@@ -21,6 +19,7 @@ if (!is_logged_in()) {
     exit();
 }
 
+// Check if user is artisan
 if (!is_artisan()) {
     $response['status'] = 'error';
     $response['message'] = 'Artisan access required';
@@ -40,7 +39,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 if (!isset($_FILES['profile_image']) || $_FILES['profile_image']['error'] === UPLOAD_ERR_NO_FILE) {
     $response['status'] = 'error';
     $response['message'] = 'No image file uploaded';
-    error_log("No file uploaded - FILES: " . print_r($_FILES, true));
     echo json_encode($response);
     exit();
 }
@@ -82,13 +80,15 @@ if ($file_size > $max_file_size) {
     exit();
 }
 
-// Get user ID
-$user_id = get_user_id();
+// Get customer ID
+$customer_id = get_user_id();
 
-// CRITICAL FIX: uploads/ is at web root, project is in E-Commerce_Lab/
+// CRITICAL: uploads/ is at web root, project is in E-Commerce_Lab/
+// From actions/ folder, go UP to E-Commerce_Lab/, then UP to web root, then into uploads/
 $upload_base = dirname(dirname(__DIR__)) . '/uploads/';
-$user_folder = 'u' . $user_id . '/artisan/profile/';
-$full_path = $upload_base . $user_folder;
+$user_folder = 'u' . $customer_id . '/';
+$profile_folder = 'artisan/profile/';
+$full_path = $upload_base . $user_folder . $profile_folder;
 
 // Verify upload base exists
 if (!file_exists($upload_base)) {
@@ -120,7 +120,7 @@ if (!is_writable($full_path)) {
     exit();
 }
 
-// Generate unique filename
+// Generate unique filename to prevent overwrites
 $unique_filename = 'profile_' . time() . '_' . uniqid() . '.' . $file_ext;
 $destination = $full_path . $unique_filename;
 
@@ -130,22 +130,26 @@ if (move_uploaded_file($file_tmp, $destination)) {
     chmod($destination, 0644);
     
     // Store relative path (for database and web access)
-    $relative_path = 'uploads/' . $user_folder . $unique_filename;
+    $relative_path = 'uploads/' . $user_folder . $profile_folder . $unique_filename;
     
-    // CRITICAL: Update customer_image in database
-    $update_result = update_customer_image_ctr($user_id, $relative_path);
+    // CRITICAL FIX: Update database with image path
+    require_once '../controllers/customer_controller.php';
+    
+    $update_result = update_customer_image_ctr($customer_id, $relative_path);
     
     if ($update_result) {
         $response['status'] = 'success';
         $response['message'] = 'Profile image uploaded successfully';
         $response['image_path'] = $relative_path;
-        $response['file_name'] = $unique_filename;
         
-        error_log("Artisan profile image uploaded and saved - Path: {$relative_path}, User: " . get_user_email());
+        error_log("Profile image uploaded and saved - Customer: {$customer_id}, Path: {$relative_path}");
     } else {
-        $response['status'] = 'error';
-        $response['message'] = 'Image uploaded but failed to update database';
-        error_log("Failed to update database with image path - User ID: {$user_id}, Path: {$relative_path}");
+        // File uploaded but database update failed
+        $response['status'] = 'warning';
+        $response['message'] = 'Image uploaded to server but failed to save to database. Please contact administrator.';
+        $response['image_path'] = $relative_path;
+        
+        error_log("CRITICAL: Image uploaded but DB update failed - Customer: {$customer_id}, Path: {$relative_path}");
     }
 } else {
     $response['status'] = 'error';

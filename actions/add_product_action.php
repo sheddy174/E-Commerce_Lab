@@ -2,7 +2,7 @@
 /**
  * Add Product Action Handler - CORRECTED VERSION
  * Works for both admin and artisan WITHOUT status column
- *
+ * FIXED: Removed extra artisan_id parameter from update_product_ctr call
  */
 
 header('Content-Type: application/json');
