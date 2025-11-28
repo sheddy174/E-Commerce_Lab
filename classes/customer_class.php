@@ -234,5 +234,34 @@ class Customer extends db_connection
 
         return $success;
     }
+
+    /**
+     * Update customer profile image
+     * @param int $customer_id Customer ID
+     * @param string $image_path Path to profile image
+     * @return bool Success status
+     */
+    public function updateProfileImage($customer_id, $image_path)
+    {
+        $stmt = $this->db->prepare("UPDATE customer SET customer_image = ? WHERE customer_id = ?");
+
+        if (!$stmt) {
+            error_log("Prepare failed: " . $this->db->error);
+            return false;
+        }
+
+        $stmt->bind_param("si", $image_path, $customer_id);
+        $result = $stmt->execute();
+        
+        if ($result) {
+            error_log("Customer image updated successfully - Customer ID: {$customer_id}, Path: {$image_path}");
+        } else {
+            error_log("Failed to update customer image - Customer ID: {$customer_id}, Error: " . $stmt->error);
+        }
+        
+        $stmt->close();
+        return $result;
+    }
 }
+
 ?>

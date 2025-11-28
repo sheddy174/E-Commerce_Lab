@@ -28,8 +28,6 @@ if (!is_admin() && !is_artisan()) {
     echo json_encode($response);
     exit();
 }
-
-
 // Only process POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     $response['status'] = 'error';

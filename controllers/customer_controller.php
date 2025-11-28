@@ -188,20 +188,16 @@ function update_customer_image_ctr($customer_id, $image_path)
             return false;
         }
 
-        $customer = new Customer();
-        $success = $customer->updateCustomerImage($customer_id, $image_path);
-
-        if ($success) {
-            error_log("Customer image updated - ID: {$customer_id}, Path: {$image_path}");
-        } else {
-            error_log("Customer image update FAILED - ID: {$customer_id}, Path: {$image_path}");
+        if (empty($image_path)) {
+            return false;
         }
 
-        return $success;
+        require_once '../classes/customer_class.php';
+        $customer = new Customer();
+        return $customer->updateProfileImage($customer_id, $image_path);
     } catch (Exception $e) {
         error_log("Update customer image exception: " . $e->getMessage());
         return false;
     }
 }
-
 ?>
