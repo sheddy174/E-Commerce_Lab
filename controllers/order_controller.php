@@ -9,31 +9,47 @@ require_once(__DIR__ . '/../classes/order_class.php');
  */
 
 /**
- * Create a new order
+ * Create a new order - UPDATED
  * @param int $customer_id Customer ID
  * @param string $invoice_no Invoice number
  * @param string $order_date Order date
- * @param string $order_status Order status
+ * @param string $order_status Order status (backward compatible)
+ * @param string $payment_status Payment status
+ * @param string $delivery_status Delivery status
  * @return int|false Order ID on success, false on failure
  */
-function create_order_ctr($customer_id, $invoice_no, $order_date, $order_status = 'Pending')
-{
+function create_order_ctr(
+    $customer_id,
+    $invoice_no,
+    $order_date,
+    $order_status = 'Pending',
+    $payment_status = 'pending',
+    $delivery_status = 'pending'
+) {
     try {
         if (!is_numeric($customer_id) || $customer_id <= 0) {
             error_log("Invalid customer ID: " . $customer_id);
             return false;
         }
 
-        // Invoice can be string (GTUNES-...) so don't validate as numeric
         if (empty($invoice_no)) {
             error_log("Invalid invoice number: " . $invoice_no);
             return false;
         }
 
         $order = new order_class();
-        $result = $order->create_order($customer_id, $invoice_no, $order_date, $order_status);
+        $result = $order->create_order(
+            $customer_id,
+            $invoice_no,
+            $order_date,
+            $order_status,
+            $payment_status,
+            $delivery_status
+        );
 
-        error_log("Create order attempt - Customer: " . $customer_id . ", Invoice: " . $invoice_no . " - Result: " . ($result ? 'Success (Order ID: ' . $result . ')' : 'Failed'));
+        error_log("Create order attempt - Customer: " . $customer_id . ", Invoice: " . $invoice_no .
+            ", Payment: " . $payment_status . ", Delivery: " . $delivery_status .
+            " - Result: " . ($result ? 'Success (Order ID: ' . $result . ')' : 'Failed'));
 
         return $result;
     } catch (Exception $e) {
@@ -41,7 +57,6 @@ function create_order_ctr($customer_id, $invoice_no, $order_date, $order_status 
         return false;
     }
 }
-
 /**
  * Add order details (products in order)
  * @param int $order_id Order ID
@@ -92,10 +107,17 @@ function add_order_details_ctr($order_id, $product_id, $qty)
  * @param string $payment_channel Payment channel (card, mobile_money, etc.)
  * @return int|false Payment ID on success, false on failure
  */
-function record_payment_ctr($amount, $customer_id, $order_id, $currency = 'GHS', $payment_date,
-                           $payment_method = 'direct', $transaction_ref = null, 
-                           $authorization_code = null, $payment_channel = null)
-{
+function record_payment_ctr(
+    $amount,
+    $customer_id,
+    $order_id,
+    $currency = 'GHS',
+    $payment_date,
+    $payment_method = 'direct',
+    $transaction_ref = null,
+    $authorization_code = null,
+    $payment_channel = null
+) {
     try {
         if (!is_numeric($amount) || $amount <= 0) {
             error_log("Invalid payment amount: " . $amount);
@@ -113,12 +135,21 @@ function record_payment_ctr($amount, $customer_id, $order_id, $currency = 'GHS',
         }
 
         $order = new order_class();
-        $result = $order->record_payment($amount, $customer_id, $order_id, $currency, $payment_date,
-                                        $payment_method, $transaction_ref, $authorization_code, $payment_channel);
+        $result = $order->record_payment(
+            $amount,
+            $customer_id,
+            $order_id,
+            $currency,
+            $payment_date,
+            $payment_method,
+            $transaction_ref,
+            $authorization_code,
+            $payment_channel
+        );
 
         $payment_info = $payment_method . ($transaction_ref ? " (Ref: $transaction_ref)" : "");
-        error_log("Record payment - Order: " . $order_id . ", Amount: " . $amount . " " . $currency . 
-                 ", Method: " . $payment_info . " - Result: " . ($result ? 'Success (Payment ID: ' . $result . ')' : 'Failed'));
+        error_log("Record payment - Order: " . $order_id . ", Amount: " . $amount . " " . $currency .
+            ", Method: " . $payment_info . " - Result: " . ($result ? 'Success (Payment ID: ' . $result . ')' : 'Failed'));
 
         return $result;
     } catch (Exception $e) {
@@ -194,12 +225,12 @@ function get_order_details_ctr($order_id, $customer_id = null)
         }
 
         $order = new order_class();
-        
+
         // If customer_id provided, use secure method
         if ($customer_id !== null) {
             return $order->get_order_details($order_id, $customer_id);
         }
-        
+
         // Otherwise use admin method
         return $order->get_order_by_id($order_id);
     } catch (Exception $e) {
@@ -269,9 +300,9 @@ function generate_invoice_number_ctr()
     try {
         $order = new order_class();
         $invoice = $order->generate_invoice_number();
-        
+
         error_log("Generated invoice number: " . $invoice);
-        
+
         return $invoice;
     } catch (Exception $e) {
         error_log("Generate invoice number exception: " . $e->getMessage());
@@ -279,23 +310,6 @@ function generate_invoice_number_ctr()
         $fallback = 'GTUNES-' . date('Ymd') . '-' . time();
         error_log("Using fallback invoice: " . $fallback);
         return $fallback;
-    }
-}
-
-/**
- * Get all orders (Admin function)
- * @param int $limit Limit number of results
- * @param int $offset Offset for pagination
- * @return array|false Array of orders or false on failure
- */
-function get_all_orders_ctr($limit = 50, $offset = 0)
-{
-    try {
-        $order = new order_class();
-        return $order->get_all_orders($limit, $offset);
-    } catch (Exception $e) {
-        error_log("Get all orders exception: " . $e->getMessage());
-        return false;
     }
 }
 
@@ -317,6 +331,38 @@ function calculate_order_total_ctr($order_id)
     } catch (Exception $e) {
         error_log("Calculate order total exception: " . $e->getMessage());
         return 0;
+    }
+}
+/**
+ * Get order statistics
+ */
+function get_order_stats_ctr()
+{
+    try {
+        require_once(__DIR__ . '/../classes/order_class.php');
+        $order = new order_class();
+        return $order->get_order_stats();
+    } catch (Exception $e) {
+        error_log("Get order stats exception: " . $e->getMessage());
+        return [];
+    }
+}
+/**
+ * Get all orders (Admin function) - UPDATED with filters
+ * @param string|null $status Filter by delivery status
+ * @param string|null $search Search by customer name/email
+ * @param int $limit Limit results
+ * @param int $offset Offset for pagination
+ * @return array|false Array of orders or false on failure
+ */
+function get_all_orders_ctr($status = null, $search = null, $limit = 50, $offset = 0)
+{
+    try {
+        $order = new order_class();
+        return $order->get_all_orders($limit, $offset, $status, $search);
+    } catch (Exception $e) {
+        error_log("Get all orders exception: " . $e->getMessage());
+        return false;
     }
 }
 ?>
