@@ -188,19 +188,14 @@ function update_customer_image_ctr($customer_id, $image_path)
             return false;
         }
 
-        require_once '../classes/customer_class.php';
         $customer = new Customer();
+        $success = $customer->updateCustomerImage($customer_id, $image_path);
 
-        $stmt = $customer->db->prepare("UPDATE customer SET customer_image = ? WHERE customer_id = ?");
-        if (!$stmt) {
-            return false;
+        if ($success) {
+            error_log("Customer image updated - ID: {$customer_id}, Path: {$image_path}");
+        } else {
+            error_log("Customer image update FAILED - ID: {$customer_id}, Path: {$image_path}");
         }
-
-        $stmt->bind_param("si", $image_path, $customer_id);
-        $success = $stmt->execute();
-        $stmt->close();
-
-        error_log("Customer image updated - ID: {$customer_id}, Path: {$image_path}");
 
         return $success;
     } catch (Exception $e) {
@@ -208,4 +203,5 @@ function update_customer_image_ctr($customer_id, $image_path)
         return false;
     }
 }
+
 ?>

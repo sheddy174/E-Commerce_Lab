@@ -216,5 +216,23 @@ class Customer extends db_connection
         $sql = "SELECT customer_id, customer_name, customer_email, customer_country, customer_city, customer_contact, user_role FROM customer ORDER BY customer_name ASC";
         return $this->db_fetch_all($sql);
     }
+
+    /**
+     * Update customer image
+     */
+    public function updateCustomerImage($customer_id, $image_path)
+    {
+        $stmt = $this->db->prepare("UPDATE customer SET customer_image = ? WHERE customer_id = ?");
+        if (!$stmt) {
+            error_log("UpdateCustomerImage prepare failed: " . $this->db->error);
+            return false;
+        }
+
+        $stmt->bind_param("si", $image_path, $customer_id);
+        $success = $stmt->execute();
+        $stmt->close();
+
+        return $success;
+    }
 }
 ?>
