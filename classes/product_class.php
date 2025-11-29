@@ -861,7 +861,7 @@ class Product extends db_connection
                     ap.craft_specialty,
                     c.customer_name as artisan_name,
                     c.customer_id as artisan_customer_id,
-                    cat.cat_name as category_name,
+                    cat.cat_name,
                     b.brand_name
                 FROM products p
                 LEFT JOIN artisan_profiles ap ON p.artisan_id = ap.artisan_id
