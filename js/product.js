@@ -1,18 +1,24 @@
 /**
  * Product Management JavaScript
  * Handles CRUD operations for products via AJAX with image uploads
- * UPDATED: Added Source column to show Admin vs Artisan products
- * FIXED: Proper DataTables filtering for Source column
+ * Includes Source column (Admin vs Artisan) and Source filter
  */
 
 $(document).ready(function () {
-    // Initialize DataTable
+    // Initialize DataTable reference
     let productsTable;
+
+    // Make sure filter starts on "all"
+    $('#sourceFilter').val('all');
 
     // Load initial data
     loadCategories();
     loadBrands();
     loadProducts();
+
+    // =========================================================
+    // CATEGORY & BRAND LOADING
+    // =========================================================
 
     /**
      * Load categories for dropdown menus
@@ -88,6 +94,10 @@ $(document).ready(function () {
         });
     }
 
+    // =========================================================
+    // LOAD & RENDER PRODUCTS
+    // =========================================================
+
     /**
      * Load all products from server
      */
@@ -104,7 +114,7 @@ $(document).ready(function () {
                 if (response.status === 'success') {
                     populateTable(response.data);
                     updateStats(response.data);
-                    // Update "Added Today" stat if available
+
                     if (response.added_today !== undefined) {
                         $('#todayAdded').text(response.added_today);
                     }
@@ -124,7 +134,7 @@ $(document).ready(function () {
 
     /**
      * Populate the products table
-     * UPDATED: Now includes Source column
+     * Includes Source column and data-source attribute for filtering
      */
     function populateTable(products) {
         if (productsTable) {
@@ -148,19 +158,16 @@ $(document).ready(function () {
         }
 
         products.forEach(function (product) {
-            // FIXED: Image path construction for shared server
-            // Database stores: uploads/u40/p6/image.png
-            // From admin/product.php, we need to go up to web root: ../../uploads/...
+            // Image path construction for shared server
             const imageUrl = product.product_image
                 ? '../../' + product.product_image
                 : 'https://placehold.co/200x200/E3F2FD/2E86AB?text=No+Image';
 
             const price = parseFloat(product.product_price).toFixed(2);
 
-            // NEW: Build source badge
+            // Build source badge
             let sourceBadge = '';
             if (product.artisan_id) {
-                // Artisan product
                 const shopName = escapeHtml(product.shop_name || 'Artisan');
                 const artisanName = escapeHtml(product.artisan_name || '');
                 sourceBadge = `
@@ -169,7 +176,6 @@ $(document).ready(function () {
                     </span>
                 `;
             } else {
-                // Admin product
                 sourceBadge = `
                     <span class="badge bg-primary">
                         <i class="fas fa-shield-alt"></i> Admin
@@ -186,7 +192,10 @@ $(document).ready(function () {
                     </td>
                     <td>
                         <strong>${escapeHtml(product.product_title)}</strong><br>
-                        <small class="text-muted">${escapeHtml(product.product_desc || '').substring(0, 50)}${product.product_desc && product.product_desc.length > 50 ? '...' : ''}</small>
+                        <small class="text-muted">
+                            ${escapeHtml(product.product_desc || '').substring(0, 50)}
+                            ${product.product_desc && product.product_desc.length > 50 ? '...' : ''}
+                        </small>
                     </td>
                     <td>
                         <span class="badge bg-info">
@@ -229,12 +238,17 @@ $(document).ready(function () {
                 info: "Showing _START_ to _END_ of _TOTAL_ products"
             },
             columnDefs: [
-                { orderable: false, targets: [1, 7] }  // Image and Actions columns
+                { orderable: false, targets: [1, 7] } // Image and Actions columns
             ],
             order: [[0, 'desc']]
         });
 
         $('#tableContainer').show();
+
+        // After table is (re)built, immediately apply current filter
+        if ($('#sourceFilter').val()) {
+            productsTable.draw();
+        }
     }
 
     /**
@@ -260,12 +274,17 @@ $(document).ready(function () {
         }
     }
 
+    // =========================================================
+    // UTILITIES
+    // =========================================================
+
     /**
      * Show alert message
      */
     function showAlert(type, message) {
-        const alertClass = type === 'success' ? 'alert-success' :
-            type === 'error' ? 'alert-danger' : 'alert-warning';
+        const alertClass = type === 'success' ? 'alert-success'
+            : type === 'error' ? 'alert-danger'
+            : 'alert-warning';
         const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
 
         const alertHtml = `
@@ -335,7 +354,7 @@ $(document).ready(function () {
         }
 
         // Check file size (5MB max)
-        const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+        const maxSize = 5 * 1024 * 1024; // 5MB
         if (file.size > maxSize) {
             errors.push('Image file is too large. Maximum size is 5MB');
         }
@@ -352,7 +371,10 @@ $(document).ready(function () {
         };
     }
 
-    // Image preview handlers
+    // =========================================================
+    // IMAGE PREVIEW HANDLERS
+    // =========================================================
+
     $('#addProductImage').change(function () {
         previewImage(this, '#addImagePreview', '#addFileName');
     });
@@ -367,6 +389,14 @@ $(document).ready(function () {
         if (file) {
             $(fileNameSelector).text(file.name);
 
+            const validation = validateImageFile(file);
+            if (!validation.isValid) {
+                showAlert('error', validation.errors.join('. '));
+                input.value = '';
+                $(previewSelector).hide();
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = function (e) {
                 $(previewSelector).attr('src', e.target.result).show();
@@ -378,13 +408,15 @@ $(document).ready(function () {
         }
     }
 
-    // Add Product Form Submission
+    // =========================================================
+    // ADD PRODUCT
+    // =========================================================
+
     $('#addProductForm').submit(function (e) {
         e.preventDefault();
 
         const formData = new FormData(this);
 
-        // Debug: Log form data
         console.log('Submitting product with data:');
         for (let pair of formData.entries()) {
             if (pair[0] === 'product_image') {
@@ -394,7 +426,6 @@ $(document).ready(function () {
             }
         }
 
-        // Client-side validation
         const validation = validateProduct({
             product_title: formData.get('product_title'),
             product_cat: formData.get('product_cat'),
@@ -407,7 +438,6 @@ $(document).ready(function () {
             return;
         }
 
-        // Check if image file is selected
         const imageFile = $('#addProductImage')[0].files[0];
         if (imageFile) {
             console.log('Image file selected:', imageFile.name, 'Size:', imageFile.size, 'Type:', imageFile.type);
@@ -423,9 +453,9 @@ $(document).ready(function () {
             url: '../actions/add_product_action.php',
             type: 'POST',
             data: formData,
-            processData: false,  // Important for FormData
-            contentType: false,  // Important for FormData
-            cache: false,        // Don't cache the request
+            processData: false,
+            contentType: false,
+            cache: false,
             dataType: 'json',
             success: function (response) {
                 console.log('Server response:', response);
@@ -438,7 +468,6 @@ $(document).ready(function () {
                     $('#addFileName').text('No file chosen');
                     showAlert('success', response.message);
 
-                    // Show debug info if image upload failed but product was added
                     if (response.debug) {
                         console.warn('Image upload debug info:', response.debug);
                     }
@@ -448,7 +477,6 @@ $(document).ready(function () {
                     console.error('Product add failed:', response.message);
                     showAlert('error', response.message);
 
-                    // Show debug info if available
                     if (response.debug) {
                         console.error('Debug info:', response.debug);
                     }
@@ -464,7 +492,6 @@ $(document).ready(function () {
 
                 submitBtn.prop('disabled', false).html(originalText);
 
-                // Try to parse error response
                 let errorMessage = 'Error adding product. Please try again.';
                 try {
                     const errorResponse = JSON.parse(xhr.responseText);
@@ -472,7 +499,6 @@ $(document).ready(function () {
                         errorMessage = errorResponse.message;
                     }
                 } catch (e) {
-                    // If response is not JSON, use status text
                     if (xhr.status === 413) {
                         errorMessage = 'File too large. Maximum size is 5MB.';
                     } else if (xhr.status === 500) {
@@ -485,11 +511,13 @@ $(document).ready(function () {
         });
     });
 
-    // Edit Product Button Click
+    // =========================================================
+    // EDIT PRODUCT
+    // =========================================================
+
     $(document).on('click', '.edit-btn', function () {
         const productId = $(this).data('id');
 
-        // Fetch product details
         $.ajax({
             url: '../actions/fetch_product_action.php',
             type: 'GET',
@@ -515,7 +543,6 @@ $(document).ready(function () {
         $('#editProductDesc').val(product.product_desc);
         $('#editProductKeywords').val(product.product_keywords);
 
-        // FIXED: Image path for display in edit modal
         const imageUrl = product.product_image
             ? '../../' + product.product_image
             : 'https://placehold.co/200x200/E3F2FD/2E86AB?text=No+Image';
@@ -525,13 +552,11 @@ $(document).ready(function () {
         $('#editFileName').text('No file chosen');
     }
 
-    // Edit Product Form Submission
     $('#editProductForm').submit(function (e) {
         e.preventDefault();
 
         const formData = new FormData(this);
 
-        // Debug: Log form data
         console.log('Updating product with data:');
         for (let pair of formData.entries()) {
             if (pair[0] === 'product_image') {
@@ -553,7 +578,6 @@ $(document).ready(function () {
             return;
         }
 
-        // Check if new image file is selected
         const imageFile = $('#editProductImage')[0].files[0];
         if (imageFile) {
             console.log('New image file selected:', imageFile.name, 'Size:', imageFile.size, 'Type:', imageFile.type);
@@ -596,7 +620,6 @@ $(document).ready(function () {
 
                 submitBtn.prop('disabled', false).html(originalText);
 
-                // Try to parse error response
                 let errorMessage = 'Error updating product. Please try again.';
                 try {
                     const errorResponse = JSON.parse(xhr.responseText);
@@ -616,7 +639,10 @@ $(document).ready(function () {
         });
     });
 
-    // Delete Product Button Click
+    // =========================================================
+    // DELETE PRODUCT
+    // =========================================================
+
     $(document).on('click', '.delete-btn', function () {
         const productId = $(this).data('id');
         const productTitle = $(this).data('title');
@@ -658,34 +684,43 @@ $(document).ready(function () {
         });
     }
 
-    // FIXED: Source Filter Handler using DataTables custom search API (PROPER METHOD)
-    // This replaces the broken manual show/hide method
+    // =========================================================
+    // SOURCE FILTER (All / Admin / Artisan)
+    // =========================================================
+
+    // Custom DataTables filter for source
     $.fn.dataTable.ext.search.push(
-        function(settings, data, dataIndex) {
-            const filterValue = $('#sourceFilter').val();
-            
-            // If "all" is selected, show all rows
+        function (settings, data, dataIndex) {
+            // Only apply to our products table
+            if (settings.nTable.getAttribute('id') !== 'productsTable') {
+                return true;
+            }
+
+            // Default to "all" if value is empty/undefined
+            const filterValue = $('#sourceFilter').val() || 'all';
+
             if (filterValue === 'all') {
                 return true;
             }
-            
-            // Get the row element and check its data-source attribute
+
             const row = $('#productsTable tbody tr').eq(dataIndex);
-            const rowSource = row.attr('data-source');
-            
-            // Return true if row matches filter, false otherwise
+            const rowSource = row.attr('data-source') || 'admin';
+
             return rowSource === filterValue;
         }
     );
-    
-    // Handle filter dropdown change - triggers DataTables redraw
+
+    // When filter changes, redraw table
     $('#sourceFilter').change(function () {
         if (productsTable) {
-            productsTable.draw(); // Redraw table with filter applied
+            productsTable.draw();
         }
     });
 
-    // Clear forms when modals close
+    // =========================================================
+    // MODAL CLEANUP
+    // =========================================================
+
     $('#addProductModal').on('hidden.bs.modal', function () {
         $('#addProductForm')[0].reset();
         $('#addImagePreview').hide();
