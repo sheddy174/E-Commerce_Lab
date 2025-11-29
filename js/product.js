@@ -1,35 +1,28 @@
 /**
  * Product Management JavaScript
  * Handles CRUD operations for products via AJAX with image uploads
- * Includes Source column (Admin vs Artisan) and Source filter
+ * Includes Source column + filter (Admin vs Artisan)
  */
 
 $(document).ready(function () {
-    // Initialize DataTable reference
-    let productsTable;
-
-    // Make sure filter starts on "all"
-    $('#sourceFilter').val('all');
+    let productsTable = null;
 
     // Load initial data
     loadCategories();
     loadBrands();
     loadProducts();
 
-    // =========================================================
-    // CATEGORY & BRAND LOADING
-    // =========================================================
+    /* ============================
+     *  CATEGORY / BRAND LOADING
+     * ============================ */
 
-    /**
-     * Load categories for dropdown menus
-     */
     function loadCategories() {
         $.ajax({
             url: '../actions/fetch_categories_for_dropdown.php',
             type: 'GET',
             dataType: 'json',
             success: function (response) {
-                if (response.status === 'success' && response.data.length > 0) {
+                if (response.status === 'success' && Array.isArray(response.data)) {
                     populateCategoryDropdowns(response.data);
                     $('#totalCategories').text(response.data.length);
                 }
@@ -40,9 +33,6 @@ $(document).ready(function () {
         });
     }
 
-    /**
-     * Populate category dropdown menus
-     */
     function populateCategoryDropdowns(categories) {
         const addDropdown = $('#addProductCategory');
         const editDropdown = $('#editProductCategory');
@@ -57,16 +47,13 @@ $(document).ready(function () {
         });
     }
 
-    /**
-     * Load brands for dropdown menus
-     */
     function loadBrands() {
         $.ajax({
             url: '../actions/fetch_brand_action.php',
             type: 'GET',
             dataType: 'json',
             success: function (response) {
-                if (response.status === 'success' && response.data.length > 0) {
+                if (response.status === 'success' && Array.isArray(response.data)) {
                     populateBrandDropdowns(response.data);
                     $('#totalBrands').text(response.data.length);
                 }
@@ -77,9 +64,6 @@ $(document).ready(function () {
         });
     }
 
-    /**
-     * Populate brand dropdown menus
-     */
     function populateBrandDropdowns(brands) {
         const addDropdown = $('#addProductBrand');
         const editDropdown = $('#editProductBrand');
@@ -94,13 +78,10 @@ $(document).ready(function () {
         });
     }
 
-    // =========================================================
-    // LOAD & RENDER PRODUCTS
-    // =========================================================
+    /* ============================
+     *  PRODUCT LOADING + TABLE
+     * ============================ */
 
-    /**
-     * Load all products from server
-     */
     function loadProducts() {
         showLoading(true);
 
@@ -111,7 +92,7 @@ $(document).ready(function () {
             success: function (response) {
                 showLoading(false);
 
-                if (response.status === 'success') {
+                if (response.status === 'success' && Array.isArray(response.data)) {
                     populateTable(response.data);
                     updateStats(response.data);
 
@@ -119,60 +100,44 @@ $(document).ready(function () {
                         $('#todayAdded').text(response.added_today);
                     }
                 } else {
-                    showAlert('error', 'Failed to load products: ' + response.message);
+                    showAlert('error', 'Failed to load products: ' + (response.message || 'Unknown error'));
                     populateTable([]);
                 }
             },
             error: function (xhr, status, error) {
                 showLoading(false);
-                console.error('AJAX Error:', error);
+                console.error('AJAX Error (loadProducts):', error);
                 showAlert('error', 'Error loading products. Please refresh the page.');
                 populateTable([]);
             }
         });
     }
 
-    /**
-     * Populate the products table
-     * Includes Source column and data-source attribute for filtering
-     */
     function populateTable(products) {
-        if (productsTable) {
-            productsTable.destroy();
+        // Destroy existing DataTable if it exists
+        if ($.fn.DataTable.isDataTable('#productsTable')) {
+            productsTable.clear().destroy();
         }
 
         const tableBody = $('#productsTable tbody');
         tableBody.empty();
 
-        if (products.length === 0) {
-            tableBody.append(`
-                <tr>
-                    <td colspan="8" class="text-center text-muted py-4">
-                        <i class="fas fa-inbox fa-2x mb-2"></i><br>
-                        No products found. Add your first product to get started.
-                    </td>
-                </tr>
-            `);
-            $('#tableContainer').show();
-            return;
-        }
-
+        // Build rows (ALWAYS 8 <td> per row to match <thead>)
         products.forEach(function (product) {
-            // Image path construction for shared server
             const imageUrl = product.product_image
                 ? '../../' + product.product_image
                 : 'https://placehold.co/200x200/E3F2FD/2E86AB?text=No+Image';
 
-            const price = parseFloat(product.product_price).toFixed(2);
+            const price = parseFloat(product.product_price || 0).toFixed(2);
 
-            // Build source badge
+            // Source badge
             let sourceBadge = '';
             if (product.artisan_id) {
                 const shopName = escapeHtml(product.shop_name || 'Artisan');
                 const artisanName = escapeHtml(product.artisan_name || '');
                 sourceBadge = `
                     <span class="badge bg-warning text-dark" title="${artisanName}">
-                        <i class="fas fa-hammer"></i> ${shopName}
+                        <i class="fas fa-hammer"></i> Artisan – ${shopName}
                     </span>
                 `;
             } else {
@@ -187,7 +152,7 @@ $(document).ready(function () {
                 <tr data-source="${product.artisan_id ? 'artisan' : 'admin'}">
                     <td>${product.product_id}</td>
                     <td>
-                        <img src="${imageUrl}" class="product-image-preview" alt="${escapeHtml(product.product_title)}" 
+                        <img src="${imageUrl}" class="product-image-preview" alt="${escapeHtml(product.product_title)}"
                              onerror="this.src='https://placehold.co/200x200/E3F2FD/2E86AB?text=No+Image'">
                     </td>
                     <td>
@@ -211,12 +176,12 @@ $(document).ready(function () {
                     <td>${sourceBadge}</td>
                     <td>
                         <div class="btn-group btn-group-sm" role="group">
-                            <button type="button" class="btn btn-outline-primary edit-btn" 
+                            <button type="button" class="btn btn-outline-primary edit-btn"
                                     data-id="${product.product_id}"
                                     title="Edit Product">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-danger delete-btn" 
+                            <button type="button" class="btn btn-outline-danger delete-btn"
                                     data-id="${product.product_id}"
                                     data-title="${escapeHtml(product.product_title)}"
                                     title="Delete Product">
@@ -229,42 +194,51 @@ $(document).ready(function () {
             tableBody.append(row);
         });
 
+        // Initialise DataTable (even if there are 0 rows – it will show emptyTable message)
         productsTable = $('#productsTable').DataTable({
             pageLength: 10,
             responsive: true,
             language: {
                 search: "Search products:",
                 lengthMenu: "Show _MENU_ products per page",
-                info: "Showing _START_ to _END_ of _TOTAL_ products"
+                info: "Showing _START_ to _END_ of _TOTAL_ products",
+                emptyTable: `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-2x mb-2"></i><br>
+                        No products found. Add your first product to get started.
+                    </div>
+                `
             },
             columnDefs: [
-                { orderable: false, targets: [1, 7] } // Image and Actions columns
+                { orderable: false, targets: [1, 7] } // Image + Actions
             ],
             order: [[0, 'desc']]
         });
 
         $('#tableContainer').show();
 
-        // After table is (re)built, immediately apply current filter
-        if ($('#sourceFilter').val()) {
-            productsTable.draw();
-        }
+        // After (re)initialising, force redraw so the current Source filter is applied
+        applySourceFilter();
     }
 
-    /**
-     * Update statistics cards
-     */
+    /* ============================
+     *  STATS
+     * ============================ */
+
     function updateStats(products) {
         const totalProducts = products.length;
-        const totalValue = products.reduce((sum, product) => sum + parseFloat(product.product_price), 0);
+        const totalValue = products.reduce((sum, product) => {
+            return sum + parseFloat(product.product_price || 0);
+        }, 0);
 
         $('#totalProducts').text(totalProducts);
         $('#totalValue').text('GHS ' + totalValue.toFixed(2));
     }
 
-    /**
-     * Show/hide loading spinner
-     */
+    /* ============================
+     *  UTILITIES
+     * ============================ */
+
     function showLoading(show) {
         if (show) {
             $('#loadingSpinner').show();
@@ -274,17 +248,13 @@ $(document).ready(function () {
         }
     }
 
-    // =========================================================
-    // UTILITIES
-    // =========================================================
-
-    /**
-     * Show alert message
-     */
     function showAlert(type, message) {
-        const alertClass = type === 'success' ? 'alert-success'
-            : type === 'error' ? 'alert-danger'
-            : 'alert-warning';
+        const alertClass = type === 'success'
+            ? 'alert-success'
+            : type === 'warning'
+                ? 'alert-warning'
+                : 'alert-danger';
+
         const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
 
         const alertHtml = `
@@ -300,9 +270,6 @@ $(document).ready(function () {
         $('html, body').animate({ scrollTop: 0 }, 500);
     }
 
-    /**
-     * Escape HTML to prevent XSS
-     */
     function escapeHtml(text) {
         if (!text) return '';
         const map = {
@@ -315,9 +282,6 @@ $(document).ready(function () {
         return text.toString().replace(/[&<>"']/g, m => map[m]);
     }
 
-    /**
-     * Validate product data
-     */
     function validateProduct(data) {
         const errors = [];
 
@@ -343,23 +307,18 @@ $(document).ready(function () {
         };
     }
 
-    /**
-     * Validate image file before upload
-     */
     function validateImageFile(file) {
         const errors = [];
 
         if (!file) {
-            return { isValid: true, errors: [] }; // No file is okay
+            return { isValid: true, errors: [] };
         }
 
-        // Check file size (5MB max)
         const maxSize = 5 * 1024 * 1024; // 5MB
         if (file.size > maxSize) {
             errors.push('Image file is too large. Maximum size is 5MB');
         }
 
-        // Check file type
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
         if (!allowedTypes.includes(file.type.toLowerCase())) {
             errors.push('Invalid file type. Allowed: JPG, PNG, GIF, WEBP');
@@ -371,9 +330,9 @@ $(document).ready(function () {
         };
     }
 
-    // =========================================================
-    // IMAGE PREVIEW HANDLERS
-    // =========================================================
+    /* ============================
+     *  IMAGE PREVIEW
+     * ============================ */
 
     $('#addProductImage').change(function () {
         previewImage(this, '#addImagePreview', '#addFileName');
@@ -387,15 +346,16 @@ $(document).ready(function () {
         const file = input.files[0];
 
         if (file) {
-            $(fileNameSelector).text(file.name);
-
             const validation = validateImageFile(file);
             if (!validation.isValid) {
                 showAlert('error', validation.errors.join('. '));
-                input.value = '';
+                $(input).val('');
                 $(previewSelector).hide();
+                $(fileNameSelector).text('No file chosen');
                 return;
             }
+
+            $(fileNameSelector).text(file.name);
 
             const reader = new FileReader();
             reader.onload = function (e) {
@@ -408,23 +368,14 @@ $(document).ready(function () {
         }
     }
 
-    // =========================================================
-    // ADD PRODUCT
-    // =========================================================
+    /* ============================
+     *  ADD PRODUCT
+     * ============================ */
 
     $('#addProductForm').submit(function (e) {
         e.preventDefault();
 
         const formData = new FormData(this);
-
-        console.log('Submitting product with data:');
-        for (let pair of formData.entries()) {
-            if (pair[0] === 'product_image') {
-                console.log(pair[0] + ': ' + (pair[1].name || 'No file'));
-            } else {
-                console.log(pair[0] + ': ' + pair[1]);
-            }
-        }
 
         const validation = validateProduct({
             product_title: formData.get('product_title'),
@@ -436,13 +387,6 @@ $(document).ready(function () {
         if (!validation.isValid) {
             showAlert('error', validation.errors.join('. '));
             return;
-        }
-
-        const imageFile = $('#addProductImage')[0].files[0];
-        if (imageFile) {
-            console.log('Image file selected:', imageFile.name, 'Size:', imageFile.size, 'Type:', imageFile.type);
-        } else {
-            console.log('No image file selected');
         }
 
         const submitBtn = $(this).find('button[type="submit"]');
@@ -458,7 +402,6 @@ $(document).ready(function () {
             cache: false,
             dataType: 'json',
             success: function (response) {
-                console.log('Server response:', response);
                 submitBtn.prop('disabled', false).html(originalText);
 
                 if (response.status === 'success') {
@@ -467,53 +410,22 @@ $(document).ready(function () {
                     $('#addImagePreview').hide();
                     $('#addFileName').text('No file chosen');
                     showAlert('success', response.message);
-
-                    if (response.debug) {
-                        console.warn('Image upload debug info:', response.debug);
-                    }
-
                     loadProducts();
                 } else {
-                    console.error('Product add failed:', response.message);
-                    showAlert('error', response.message);
-
-                    if (response.debug) {
-                        console.error('Debug info:', response.debug);
-                    }
+                    showAlert('error', response.message || 'Failed to add product');
                 }
             },
             error: function (xhr, status, error) {
-                console.error('AJAX Error:', {
-                    status: status,
-                    error: error,
-                    responseText: xhr.responseText,
-                    statusCode: xhr.status
-                });
-
                 submitBtn.prop('disabled', false).html(originalText);
-
-                let errorMessage = 'Error adding product. Please try again.';
-                try {
-                    const errorResponse = JSON.parse(xhr.responseText);
-                    if (errorResponse.message) {
-                        errorMessage = errorResponse.message;
-                    }
-                } catch (e) {
-                    if (xhr.status === 413) {
-                        errorMessage = 'File too large. Maximum size is 5MB.';
-                    } else if (xhr.status === 500) {
-                        errorMessage = 'Server error. Check your error logs for details.';
-                    }
-                }
-
-                showAlert('error', errorMessage);
+                console.error('AJAX Error (add):', error);
+                showAlert('error', 'Error adding product. Please try again.');
             }
         });
     });
 
-    // =========================================================
-    // EDIT PRODUCT
-    // =========================================================
+    /* ============================
+     *  EDIT PRODUCT
+     * ============================ */
 
     $(document).on('click', '.edit-btn', function () {
         const productId = $(this).data('id');
@@ -523,7 +435,7 @@ $(document).ready(function () {
             type: 'GET',
             dataType: 'json',
             success: function (response) {
-                if (response.status === 'success') {
+                if (response.status === 'success' && Array.isArray(response.data)) {
                     const product = response.data.find(p => p.product_id == productId);
                     if (product) {
                         populateEditForm(product);
@@ -539,7 +451,7 @@ $(document).ready(function () {
         $('#editProductTitle').val(product.product_title);
         $('#editProductCategory').val(product.product_cat);
         $('#editProductBrand').val(product.product_brand);
-        $('#editProductPrice').val(parseFloat(product.product_price).toFixed(2));
+        $('#editProductPrice').val(parseFloat(product.product_price || 0).toFixed(2));
         $('#editProductDesc').val(product.product_desc);
         $('#editProductKeywords').val(product.product_keywords);
 
@@ -557,15 +469,6 @@ $(document).ready(function () {
 
         const formData = new FormData(this);
 
-        console.log('Updating product with data:');
-        for (let pair of formData.entries()) {
-            if (pair[0] === 'product_image') {
-                console.log(pair[0] + ': ' + (pair[1].name || 'No file'));
-            } else {
-                console.log(pair[0] + ': ' + pair[1]);
-            }
-        }
-
         const validation = validateProduct({
             product_title: formData.get('product_title'),
             product_cat: formData.get('product_cat'),
@@ -576,13 +479,6 @@ $(document).ready(function () {
         if (!validation.isValid) {
             showAlert('error', validation.errors.join('. '));
             return;
-        }
-
-        const imageFile = $('#editProductImage')[0].files[0];
-        if (imageFile) {
-            console.log('New image file selected:', imageFile.name, 'Size:', imageFile.size, 'Type:', imageFile.type);
-        } else {
-            console.log('No new image file selected (keeping existing image)');
         }
 
         const submitBtn = $(this).find('button[type="submit"]');
@@ -598,7 +494,6 @@ $(document).ready(function () {
             cache: false,
             dataType: 'json',
             success: function (response) {
-                console.log('Update response:', response);
                 submitBtn.prop('disabled', false).html(originalText);
 
                 if (response.status === 'success') {
@@ -606,42 +501,20 @@ $(document).ready(function () {
                     showAlert('success', response.message);
                     loadProducts();
                 } else {
-                    console.error('Product update failed:', response.message);
-                    showAlert('error', response.message);
+                    showAlert('error', response.message || 'Failed to update product');
                 }
             },
             error: function (xhr, status, error) {
-                console.error('AJAX Error:', {
-                    status: status,
-                    error: error,
-                    responseText: xhr.responseText,
-                    statusCode: xhr.status
-                });
-
                 submitBtn.prop('disabled', false).html(originalText);
-
-                let errorMessage = 'Error updating product. Please try again.';
-                try {
-                    const errorResponse = JSON.parse(xhr.responseText);
-                    if (errorResponse.message) {
-                        errorMessage = errorResponse.message;
-                    }
-                } catch (e) {
-                    if (xhr.status === 413) {
-                        errorMessage = 'File too large. Maximum size is 5MB.';
-                    } else if (xhr.status === 500) {
-                        errorMessage = 'Server error. Check your error logs for details.';
-                    }
-                }
-
-                showAlert('error', errorMessage);
+                console.error('AJAX Error (update):', error);
+                showAlert('error', 'Error updating product. Please try again.');
             }
         });
     });
 
-    // =========================================================
-    // DELETE PRODUCT
-    // =========================================================
+    /* ============================
+     *  DELETE PRODUCT
+     * ============================ */
 
     $(document).on('click', '.delete-btn', function () {
         const productId = $(this).data('id');
@@ -674,52 +547,52 @@ $(document).ready(function () {
                     showAlert('success', response.message);
                     loadProducts();
                 } else {
-                    showAlert('error', response.message);
+                    showAlert('error', response.message || 'Failed to delete product');
                 }
             },
             error: function (xhr, status, error) {
-                console.error('AJAX Error:', error);
+                console.error('AJAX Error (delete):', error);
                 showAlert('error', 'Error deleting product. Please try again.');
             }
         });
     }
 
-    // =========================================================
-    // SOURCE FILTER (All / Admin / Artisan)
-    // =========================================================
+    /* ============================
+     *  SOURCE FILTER (All/Admin/Artisan)
+     * ============================ */
 
-    // Custom DataTables filter for source
-    $.fn.dataTable.ext.search.push(
-        function (settings, data, dataIndex) {
-            // Only apply to our products table
-            if (settings.nTable.getAttribute('id') !== 'productsTable') {
-                return true;
-            }
-
-            // Default to "all" if value is empty/undefined
-            const filterValue = $('#sourceFilter').val() || 'all';
-
-            if (filterValue === 'all') {
-                return true;
-            }
-
-            const row = $('#productsTable tbody tr').eq(dataIndex);
-            const rowSource = row.attr('data-source') || 'admin';
-
-            return rowSource === filterValue;
+    // Custom filter using DataTables internal row data (no DOM indexing)
+    $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+        // Apply only to our productsTable
+        if (settings.nTable && settings.nTable.id !== 'productsTable') {
+            return true;
         }
-    );
 
-    // When filter changes, redraw table
-    $('#sourceFilter').change(function () {
+        const filterValue = $('#sourceFilter').val() || 'all';
+        if (filterValue === 'all') {
+            return true;
+        }
+
+        // Access underlying row node to read our data-source attribute
+        const rowNode = settings.aoData[dataIndex].nTr;
+        const rowSource = $(rowNode).attr('data-source'); // "admin" or "artisan"
+
+        return rowSource === filterValue;
+    });
+
+    function applySourceFilter() {
         if (productsTable) {
             productsTable.draw();
         }
+    }
+
+    $('#sourceFilter').change(function () {
+        applySourceFilter();
     });
 
-    // =========================================================
-    // MODAL CLEANUP
-    // =========================================================
+    /* ============================
+     *  MODAL FORM RESET
+     * ============================ */
 
     $('#addProductModal').on('hidden.bs.modal', function () {
         $('#addProductForm')[0].reset();
