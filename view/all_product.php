@@ -609,5 +609,4 @@ $paginated_products = array_slice($products, $offset, $items_per_page);
         });
     </script>
 </body>
-
 </html>
