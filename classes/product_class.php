@@ -840,5 +840,43 @@ class Product extends db_connection
         $stmt->close();
         return $success;
     }
+    /**
+     * Get all products with artisan information
+     * For admin view to see product source
+     */
+    public function getAllProductsWithArtisan()
+    {
+        $sql = "SELECT 
+                    p.product_id,
+                    p.product_cat,
+                    p.product_brand,
+                    p.product_title,
+                    p.product_price,
+                    p.product_desc,
+                    p.product_image,
+                    p.product_keywords,
+                    p.artisan_id,
+                    p.created_at,
+                    ap.shop_name,
+                    ap.craft_specialty,
+                    c.customer_name as artisan_name,
+                    c.customer_id as artisan_customer_id,
+                    cat.cat_name as category_name,
+                    b.brand_name
+                FROM products p
+                LEFT JOIN artisan_profiles ap ON p.artisan_id = ap.artisan_id
+                LEFT JOIN customer c ON ap.customer_id = c.customer_id
+                LEFT JOIN categories cat ON p.product_cat = cat.cat_id
+                LEFT JOIN brands b ON p.product_brand = b.brand_id
+                ORDER BY p.product_id DESC";
+        
+        $result = $this->db_fetch_all($sql);
+        
+        if ($result) {
+            error_log("Fetched " . count($result) . " products with artisan info for admin view");
+        }
+        
+        return $result;
+    }
 }
 ?>

@@ -226,46 +226,42 @@ if (!is_admin()) {
         .currency-input input {
             padding-left: 35px;
         }
+
+        /* Source Badge Styling */
+        .badge.bg-warning.text-dark {
+            background: linear-gradient(135deg, #ffc107, #ff9800) !important;
+            font-weight: 600;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .badge.bg-primary {
+            background: linear-gradient(135deg, #2E86AB, #1B5E7A) !important;
+            font-weight: 600;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .badge i {
+            margin-right: 0.25rem;
+        }
+
+        /* Source Filter Styling */
+        #sourceFilterContainer {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 0.5rem;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        #sourceFilter {
+            max-width: 250px;
+        }
     </style>
 </head>
 
 <body>
-    <!-- Admin Header -->
-    <!-- <div class="admin-header">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <h1 class="mb-0">
-                        <i class="fas fa-box-open me-3"></i>Product Management
-                    </h1>
-                    <p class="mb-0 mt-2 opacity-75">Manage your musical instruments inventory</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb justify-content-md-end mb-0">
-                            <li class="breadcrumb-item">
-                                <a href="../index.php" class="text-white text-decoration-none">
-                                    <i class="fas fa-home me-1"></i>Home
-                                </a>
-                            </li>
-                            <li class="breadcrumb-item">
-                                <a href="category.php" class="text-white text-decoration-none">
-                                    Categories
-                                </a>
-                            </li>
-                            <li class="breadcrumb-item">
-                                <a href="brand.php" class="text-white text-decoration-none">
-                                    Brands
-                                </a>
-                            </li>
-                            <li class="breadcrumb-item active text-white-50">Products</li>
-                        </ol>
-                    </nav>
-                </div>
-            </div>
-        </div>
-    </div> -->
-
     <!-- Admin Header -->
     <div class="admin-header">
         <div class="container">
@@ -341,6 +337,31 @@ if (!is_admin()) {
             </div>
         </div>
 
+        <!-- BEFORE THE "Main Product Management Card" -->
+        <!-- Source Filter -->
+        <div id="sourceFilterContainer">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <label for="sourceFilter" class="form-label mb-0">
+                        <i class="fas fa-filter me-2"></i><strong>Filter by Source:</strong>
+                    </label>
+                </div>
+                <div class="col-md-4">
+                    <select id="sourceFilter" class="form-select">
+                        <option value="all">All Products</option>
+                        <option value="admin">Admin Only</option>
+                        <option value="artisan">Artisan Only</option>
+                    </select>
+                </div>
+                <div class="col-md-5 text-muted">
+                    <small>
+                        <i class="fas fa-info-circle me-1"></i>
+                        Filter products by their source
+                    </small>
+                </div>
+            </div>
+        </div>
+
         <!-- Main Product Management Card -->
         <div class="card">
             <div class="card-header">
@@ -377,6 +398,7 @@ if (!is_admin()) {
                                 <th>Category</th>
                                 <th>Brand</th>
                                 <th>Price</th>
+                                <th>Source</th> <!-- NEW COLUMN -->
                                 <th>Actions</th>
                             </tr>
                         </thead>

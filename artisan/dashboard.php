@@ -251,7 +251,7 @@ switch ($verification_status) {
                             <i class="fas fa-user-circle me-1"></i><?php echo htmlspecialchars($customer_name); ?>
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="../actions/logout.php">
+                            <li><a class="dropdown-item" href="../actions/logout_action.php">
                                 <i class="fas fa-sign-out-alt me-1"></i>Logout
                             </a></li>
                         </ul>

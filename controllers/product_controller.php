@@ -527,4 +527,19 @@ function update_product_with_status_ctr($product_id, $cat_id, $brand_id, $title,
         return false;
     }
 }
+
+/**
+ * Get all products with artisan information
+ * Returns products with artisan shop name for admin view
+ */
+function get_all_products_with_artisan_ctr()
+{
+    try {
+        $product = new Product();
+        return $product->getAllProductsWithArtisan();
+    } catch (Exception $e) {
+        error_log("Get all products with artisan exception: " . $e->getMessage());
+        return false;
+    }
+}
 ?>

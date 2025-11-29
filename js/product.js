@@ -1,7 +1,7 @@
 /**
  * Product Management JavaScript
  * Handles CRUD operations for products via AJAX with image uploads
- * FIXED: Image paths for shared server with uploads/ at web root
+ * UPDATED: Added Source column to show Admin vs Artisan products
  */
 
 $(document).ready(function () {
@@ -123,6 +123,7 @@ $(document).ready(function () {
 
     /**
      * Populate the products table
+     * UPDATED: Now includes Source column
      */
     function populateTable(products) {
         if (productsTable) {
@@ -135,7 +136,7 @@ $(document).ready(function () {
         if (products.length === 0) {
             tableBody.append(`
                 <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
+                    <td colspan="8" class="text-center text-muted py-4">
                         <i class="fas fa-inbox fa-2x mb-2"></i><br>
                         No products found. Add your first product to get started.
                     </td>
@@ -155,8 +156,28 @@ $(document).ready(function () {
 
             const price = parseFloat(product.product_price).toFixed(2);
 
+            // NEW: Build source badge
+            let sourceBadge = '';
+            if (product.artisan_id) {
+                // Artisan product
+                const shopName = escapeHtml(product.shop_name || 'Artisan');
+                const artisanName = escapeHtml(product.artisan_name || '');
+                sourceBadge = `
+                    <span class="badge bg-warning text-dark" title="${artisanName}">
+                        <i class="fas fa-hammer"></i> ${shopName}
+                    </span>
+                `;
+            } else {
+                // Admin product
+                sourceBadge = `
+                    <span class="badge bg-primary">
+                        <i class="fas fa-shield-alt"></i> Admin
+                    </span>
+                `;
+            }
+
             const row = `
-                <tr>
+                <tr data-source="${product.artisan_id ? 'artisan' : 'admin'}">
                     <td>${product.product_id}</td>
                     <td>
                         <img src="${imageUrl}" class="product-image-preview" alt="${escapeHtml(product.product_title)}" 
@@ -177,6 +198,7 @@ $(document).ready(function () {
                         </span>
                     </td>
                     <td><strong>GHS ${price}</strong></td>
+                    <td>${sourceBadge}</td>
                     <td>
                         <div class="btn-group btn-group-sm" role="group">
                             <button type="button" class="btn btn-outline-primary edit-btn" 
@@ -206,7 +228,7 @@ $(document).ready(function () {
                 info: "Showing _START_ to _END_ of _TOTAL_ products"
             },
             columnDefs: [
-                { orderable: false, targets: [1, 6] }
+                { orderable: false, targets: [1, 7] }  // Image and Actions columns
             ],
             order: [[0, 'desc']]
         });
@@ -634,6 +656,29 @@ $(document).ready(function () {
             }
         });
     }
+
+    // NEW: Source Filter Handler
+    $('#sourceFilter').change(function () {
+        const filterValue = $(this).val();
+        
+        if (!productsTable) return;
+        
+        if (filterValue === 'all') {
+            // Show all rows
+            $('tbody tr').show();
+            productsTable.draw(false);
+        } else {
+            // Filter rows by data-source attribute
+            $('tbody tr').each(function () {
+                const rowSource = $(this).attr('data-source');
+                if (rowSource === filterValue) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        }
+    });
 
     // Clear forms when modals close
     $('#addProductModal').on('hidden.bs.modal', function () {
