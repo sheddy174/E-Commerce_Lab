@@ -150,7 +150,7 @@ $all_artisans = get_all_artisans_ctr();
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="../actions/logout.php">
+                        <a class="nav-link" href="../actions/logout_action.php">
                             <i class="fas fa-sign-out-alt me-1"></i>Logout
                         </a>
                     </li>
