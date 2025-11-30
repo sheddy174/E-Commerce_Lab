@@ -2,6 +2,7 @@
 /**
  * Customer My Orders Page
  * View order history and track deliveries
+ * CORRECTED VERSION - Fixed field names (total_amount, order_delivery_status)
  */
 
 session_start();
@@ -300,9 +301,9 @@ $orders = get_customer_orders_ctr($customer_id);
                             </small>
                         </div>
                         <div>
-                            <span class="status-badge status-<?php echo $order['order_status']; ?>">
+                            <span class="status-badge status-<?php echo $order['order_delivery_status']; ?>">
                                 <i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>
-                                <?php echo ucfirst($order['order_status']); ?>
+                                <?php echo ucfirst($order['order_delivery_status']); ?>
                             </span>
                         </div>
                     </div>
@@ -313,7 +314,7 @@ $orders = get_customer_orders_ctr($customer_id);
                             <div class="info-label">Order Amount</div>
                             <div class="info-value">
                                 <strong style="color: var(--success-color); font-size: 1.25rem;">
-                                    GHS <?php echo number_format($order['order_amount'], 2); ?>
+                                    GHS <?php echo number_format($order['total_amount'], 2); ?>
                                 </strong>
                             </div>
                         </div>
@@ -346,7 +347,7 @@ $orders = get_customer_orders_ctr($customer_id);
                     
                     <!-- Delivery Timeline -->
                     <div class="timeline">
-                        <div class="timeline-item <?php echo in_array($order['order_status'], ['pending', 'processing', 'shipped', 'delivered']) ? 'active' : ''; ?>">
+                        <div class="timeline-item <?php echo in_array($order['order_delivery_status'], ['pending', 'processing', 'shipped', 'delivered']) ? 'active' : ''; ?>">
                             <strong>Order Placed</strong>
                             <br>
                             <small class="text-muted">
@@ -354,15 +355,15 @@ $orders = get_customer_orders_ctr($customer_id);
                             </small>
                         </div>
                         
-                        <div class="timeline-item <?php echo in_array($order['order_status'], ['processing', 'shipped', 'delivered']) ? 'active' : ''; ?>">
+                        <div class="timeline-item <?php echo in_array($order['order_delivery_status'], ['processing', 'shipped', 'delivered']) ? 'active' : ''; ?>">
                             <strong>Processing</strong>
                             <br>
                             <small class="text-muted">
-                                <?php echo $order['order_status'] === 'pending' ? 'Awaiting processing' : 'Order is being prepared'; ?>
+                                <?php echo $order['order_delivery_status'] === 'pending' ? 'Awaiting processing' : 'Order is being prepared'; ?>
                             </small>
                         </div>
                         
-                        <div class="timeline-item <?php echo in_array($order['order_status'], ['shipped', 'delivered']) ? 'active' : ''; ?>">
+                        <div class="timeline-item <?php echo in_array($order['order_delivery_status'], ['shipped', 'delivered']) ? 'active' : ''; ?>">
                             <strong>Shipped</strong>
                             <br>
                             <small class="text-muted">
@@ -376,7 +377,7 @@ $orders = get_customer_orders_ctr($customer_id);
                             </small>
                         </div>
                         
-                        <div class="timeline-item <?php echo $order['order_status'] === 'delivered' ? 'active' : ''; ?>">
+                        <div class="timeline-item <?php echo $order['order_delivery_status'] === 'delivered' ? 'active' : ''; ?>">
                             <strong>Delivered</strong>
                             <br>
                             <small class="text-muted">
@@ -406,7 +407,7 @@ $orders = get_customer_orders_ctr($customer_id);
                             <i class="fas fa-eye me-1"></i>View Full Details
                         </button>
                         
-                        <?php if ($order['order_status'] === 'delivered'): ?>
+                        <?php if ($order['order_delivery_status'] === 'delivered'): ?>
                         <a href="write_review.php?order_id=<?php echo $order['order_id']; ?>" 
                            class="btn btn-success btn-sm">
                             <i class="fas fa-star me-1"></i>Write Review
@@ -492,8 +493,8 @@ $orders = get_customer_orders_ctr($customer_id);
         });
         
         function displayOrderDetails(order) {
-            // Similar to admin version but customer-focused
-            const statusClass = 'status-' + order.order_status;
+            // Customer-focused order details display
+            const statusClass = 'status-' + order.order_delivery_status;
             const orderDate = new Date(order.order_date).toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
@@ -506,13 +507,15 @@ $orders = get_customer_orders_ctr($customer_id);
                         <h6 class="fw-bold mb-3">Order Information</h6>
                         <p><strong>Order ID:</strong> #${order.order_id}</p>
                         <p><strong>Date:</strong> ${orderDate}</p>
-                        <p><strong>Amount:</strong> <span class="text-success fw-bold">GHS ${parseFloat(order.order_amount).toFixed(2)}</span></p>
-                        <p><strong>Status:</strong> <span class="status-badge ${statusClass}">${order.order_status.charAt(0).toUpperCase() + order.order_status.slice(1)}</span></p>
+                        <p><strong>Amount:</strong> <span class="text-success fw-bold">GHS ${parseFloat(order.total_amount).toFixed(2)}</span></p>
+                        <p><strong>Status:</strong> <span class="status-badge ${statusClass}">${order.order_delivery_status.charAt(0).toUpperCase() + order.order_delivery_status.slice(1)}</span></p>
                     </div>
                     
                     <div class="col-md-6">
-                        <h6 class="fw-bold mb-3">Shipping Address</h6>
-                        <p>${escapeHtml(order.invoice_no)}</p>
+                        <h6 class="fw-bold mb-3">Payment Information</h6>
+                        <p><strong>Invoice:</strong> ${escapeHtml(order.invoice_no)}</p>
+                        <p><strong>Payment Status:</strong> <span class="badge bg-success">Paid</span></p>
+                        <p><strong>Payment Method:</strong> ${escapeHtml(order.payment_method || 'Paystack')}</p>
                     </div>
                 </div>
             `;
@@ -524,6 +527,54 @@ $orders = get_customer_orders_ctr($customer_id);
                         <div class="col-12">
                             <h6 class="fw-bold mb-3">Tracking Information</h6>
                             <p><strong>Tracking Number:</strong> ${escapeHtml(order.tracking_number)}</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (order.shipped_date || order.delivered_date) {
+                html += `
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="fw-bold mb-3">Delivery Timeline</h6>
+                `;
+                
+                if (order.shipped_date) {
+                    const shippedDate = new Date(order.shipped_date).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    html += `<p><strong>Shipped:</strong> ${shippedDate}</p>`;
+                }
+                
+                if (order.delivered_date) {
+                    const deliveredDate = new Date(order.delivered_date).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    html += `<p><strong>Delivered:</strong> ${deliveredDate}</p>`;
+                }
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (order.delivery_notes) {
+                html += `
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="fw-bold mb-3">Delivery Notes</h6>
+                            <p>${escapeHtml(order.delivery_notes)}</p>
                         </div>
                     </div>
                 `;

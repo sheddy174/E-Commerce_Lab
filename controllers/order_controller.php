@@ -6,6 +6,7 @@ require_once(__DIR__ . '/../classes/order_class.php');
  * Order Controller - Business logic layer
  * Coordinates between Views and Models for order management
  * Part of MVC architecture - WITH PAYSTACK SUPPORT
+ * CORRECTED VERSION - Fixed update_order_status_ctr function
  */
 
 /**
@@ -57,6 +58,7 @@ function create_order_ctr(
         return false;
     }
 }
+
 /**
  * Add order details (products in order)
  * @param int $order_id Order ID
@@ -261,12 +263,14 @@ function get_order_products_ctr($order_id)
 }
 
 /**
- * Update order status
+ * Update order status WITH tracking and notes support - CORRECTED
  * @param int $order_id Order ID
  * @param string $order_status New status
+ * @param string|null $tracking_number Optional tracking number
+ * @param string|null $notes Optional delivery notes
  * @return bool Success status
  */
-function update_order_status_ctr($order_id, $order_status)
+function update_order_status_ctr($order_id, $order_status, $tracking_number = null, $notes = null)
 {
     try {
         if (!is_numeric($order_id) || $order_id <= 0) {
@@ -280,9 +284,11 @@ function update_order_status_ctr($order_id, $order_status)
         }
 
         $order = new order_class();
-        $result = $order->update_order_status($order_id, $order_status);
+        $result = $order->update_order_status($order_id, $order_status, $tracking_number, $notes);
 
-        error_log("Update order status - Order: " . $order_id . ", Status: " . $order_status . " - Result: " . ($result ? 'Success' : 'Failed'));
+        $tracking_info = $tracking_number ? " with tracking: " . $tracking_number : "";
+        $notes_info = $notes ? " with notes" : "";
+        error_log("Update order status - Order: " . $order_id . ", Status: " . $order_status . $tracking_info . $notes_info . " - Result: " . ($result ? 'Success' : 'Failed'));
 
         return $result;
     } catch (Exception $e) {
@@ -333,6 +339,7 @@ function calculate_order_total_ctr($order_id)
         return 0;
     }
 }
+
 /**
  * Get order statistics
  */
@@ -347,6 +354,7 @@ function get_order_stats_ctr()
         return [];
     }
 }
+
 /**
  * Get all orders (Admin function) - UPDATED with filters
  * @param string|null $status Filter by delivery status
