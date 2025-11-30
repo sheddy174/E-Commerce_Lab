@@ -1,7 +1,7 @@
 <?php
 /**
  * Verify Paystack Payment and Create Order
- * UPDATED: Now sets proper payment_status and order_delivery_status
+ * CORRECTED VERSION - Uses product_id instead of p_id
  */
 
 session_start();
@@ -9,13 +9,16 @@ require_once '../settings/core.php';
 require_once '../settings/paystack_config.php';
 require_once '../controllers/cart_controller.php';
 require_once '../controllers/order_controller.php';
+
 // Set JSON header
 header('Content-Type: application/json');
+
 // Check if user is logged in
 if (!is_logged_in()) {
     echo json_encode([
         'status' => 'error',
-        'message' => 'Please login to proceed'
+        'message' => 'Please login to proceed',
+        'verified' => false
     ]);
     exit();
 }
@@ -27,6 +30,7 @@ try {
     
     error_log("=== PAYSTACK VERIFY PAYMENT ===");
     error_log("Input data: " . json_encode($data));
+    
     // Get reference from input
     $reference = isset($data['reference']) ? trim($data['reference']) : null;
     
@@ -50,6 +54,7 @@ try {
     $verification = paystack_verify_transaction($reference);
     
     error_log("Paystack verification response: " . json_encode($verification));
+    
     // Check if verification was successful
     if (!$verification || !isset($verification['status']) || $verification['status'] !== true) {
         $error_msg = isset($verification['message']) ? $verification['message'] : 'Payment verification failed';
@@ -64,6 +69,7 @@ try {
     }
     
     $payment_data = $verification['data'];
+    
     // Verify payment status
     if ($payment_data['status'] !== 'success') {
         error_log("Payment status is not success: " . $payment_data['status']);
@@ -122,10 +128,10 @@ try {
     $invoice_no = generate_invoice_number_ctr();
     $order_date = date('Y-m-d');
     
-    // UPDATED: Set proper statuses
+    // Set proper statuses
     $order_status = 'Paid'; // Keep for backward compatibility
-    $payment_status = 'completed'; // NEW: Payment is completed
-    $delivery_status = 'pending'; // NEW: Delivery starts as pending
+    $payment_status = 'completed'; // Payment is completed
+    $delivery_status = 'pending'; // Delivery starts as pending
     
     error_log("Generated invoice: $invoice_no, Order date: $order_date");
     error_log("Statuses - Order: $order_status, Payment: $payment_status, Delivery: $delivery_status");
@@ -147,20 +153,21 @@ try {
     
     error_log("Order created successfully - Order ID: $order_id");
     
-    // Add order details (products)
+    // Add order details (products) - FIXED: Using product_id instead of p_id
     error_log("Adding order details...");
     $all_details_added = true;
     $details_count = 0;
     
     foreach ($cart_items as $item) {
-        $result = add_order_details_ctr($order_id, $item['p_id'], $item['qty']);
+        // CRITICAL FIX: Use product_id (from products table) not p_id (from cart table)
+        $result = add_order_details_ctr($order_id, $item['product_id'], $item['qty']);
         
         if (!$result) {
-            error_log("CRITICAL: Failed to add order detail - Product: " . $item['p_id'] . ", Qty: " . $item['qty']);
+            error_log("CRITICAL: Failed to add order detail - Product: " . $item['product_id'] . ", Qty: " . $item['qty']);
             $all_details_added = false;
         } else {
             $details_count++;
-            error_log("Order detail added - Product: " . $item['p_id'] . ", Qty: " . $item['qty']);
+            error_log("Order detail added - Product: " . $item['product_id'] . ", Qty: " . $item['qty']);
         }
     }
     
