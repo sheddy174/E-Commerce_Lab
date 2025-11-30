@@ -1,8 +1,8 @@
 <?php
-
 /**
  * Admin Order Management
  * Manage all orders and delivery tracking
+ * CORRECTED VERSION - Fixed DataTables initialization
  */
 
 session_start();
@@ -24,6 +24,10 @@ $search_term = isset($_GET['search']) ? trim($_GET['search']) : null;
 
 // Get all orders with filters
 $orders = get_all_orders_ctr($status_filter, $search_term);
+
+// Debug logging
+error_log("Orders page loaded - Stats: " . json_encode($stats));
+error_log("Orders count: " . (is_array($orders) ? count($orders) : 'false'));
 ?>
 
 <!DOCTYPE html>
@@ -118,6 +122,7 @@ $orders = get_all_orders_ctr($status_filter, $search_term);
             border-radius: 0.5rem;
             font-weight: 600;
             font-size: 0.875rem;
+            white-space: nowrap;
         }
 
         .status-pending {
@@ -171,6 +176,25 @@ $orders = get_all_orders_ctr($status_filter, $search_term);
         .action-buttons .btn {
             margin: 0.2rem;
         }
+
+        /* DataTables custom styling */
+        table.dataTable tbody tr {
+            cursor: pointer;
+        }
+
+        table.dataTable tbody tr:hover {
+            background-color: rgba(46, 134, 171, 0.05);
+        }
+
+        .dataTables_wrapper .dataTables_length select {
+            padding: 0.375rem 2rem 0.375rem 0.75rem;
+            border-radius: 0.375rem;
+        }
+
+        .dataTables_wrapper .dataTables_filter input {
+            border-radius: 0.375rem;
+            padding: 0.375rem 0.75rem;
+        }
     </style>
 </head>
 
@@ -178,7 +202,7 @@ $orders = get_all_orders_ctr($status_filter, $search_term);
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">
+            <a class="navbar-brand" href="dashboard.php">
                 <i class="fas fa-guitar me-2"></i>GhanaTunes Admin
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -303,28 +327,32 @@ $orders = get_all_orders_ctr($status_filter, $search_term);
                 <i class="fas fa-list me-2"></i>Orders List
             </div>
             <div class="card-body">
-                <div class="table-responsive">
-                    <table id="ordersTable" class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Customer</th>
-                                <th>Date</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Tracking</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($orders)): ?>
+                <?php if ($orders === false): ?>
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Error loading orders. Please check your database connection.
+                    </div>
+                <?php elseif (empty($orders)): ?>
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted">No orders found</h5>
+                        <p class="text-muted">Orders will appear here once customers make purchases.</p>
+                    </div>
+                <?php else: ?>
+                    <div class="table-responsive">
+                        <table id="ordersTable" class="table table-hover">
+                            <thead>
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted py-4">
-                                        <i class="fas fa-inbox fa-3x mb-3"></i><br>
-                                        No orders found
-                                    </td>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Tracking</th>
+                                    <th>Actions</th>
                                 </tr>
-                            <?php else: ?>
+                            </thead>
+                            <tbody>
                                 <?php foreach ($orders as $order): ?>
                                     <tr>
                                         <td><strong>#<?php echo $order['order_id']; ?></strong></td>
@@ -369,10 +397,10 @@ $orders = get_all_orders_ctr($status_filter, $search_term);
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -446,5 +474,25 @@ $orders = get_all_orders_ctr($status_filter, $search_term);
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script src="../js/orders_management.js"></script>
+
+    <script>
+        // Initialize DataTables only if table has data
+        $(document).ready(function() {
+            <?php if (!empty($orders)): ?>
+            $('#ordersTable').DataTable({
+                "order": [[0, "desc"]], // Sort by Order ID descending
+                "pageLength": 25,
+                "language": {
+                    "search": "Search orders:",
+                    "lengthMenu": "Show _MENU_ orders per page",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ orders",
+                    "infoEmpty": "No orders available",
+                    "infoFiltered": "(filtered from _MAX_ total orders)"
+                }
+            });
+            <?php endif; ?>
+        });
+    </script>
 </body>
+
 </html>
