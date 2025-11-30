@@ -366,101 +366,84 @@ class order_class extends db_connection
 
     /**
      * Get all orders with optional filters (Admin function)
-     * CORRECTED VERSION - Add this method to your order_class.php
      * 
-     * @param int $limit Maximum number of orders to return
-     * @param int $offset Offset for pagination
-     * @param string|null $status Filter by delivery status
-     * @param string|null $search Search by customer name or email
+     * @param int $limit Maximum number of orders to return (default 50)
+     * @param int $offset Offset for pagination (default 0)
+     * @param string|null $status Filter by delivery status (optional)
+     * @param string|null $search Search by customer name or email (optional)
      * @return array|false Array of orders or false on failure
      */
     public function get_all_orders($limit = 50, $offset = 0, $status = null, $search = null)
     {
         try {
+            // Get database connection using parent class method
+            $conn = $this->db_conn();
+
+            if (!$conn) {
+                error_log("Failed to get database connection in get_all_orders");
+                return false;
+            }
+
+            // Sanitize numeric inputs
+            $limit = (int)$limit;
+            $offset = (int)$offset;
+
             // Base query with JOIN to get customer info and payment amount
             $sql = "SELECT 
-                    o.order_id,
-                    o.customer_id,
-                    o.invoice_no,
-                    o.order_date,
-                    o.order_status,
-                    o.payment_status,
-                    o.order_delivery_status,
-                    o.tracking_number,
-                    o.shipped_date,
-                    o.delivered_date,
-                    o.delivery_notes,
-                    c.customer_name,
-                    c.customer_email,
-                    c.customer_contact,
-                    COALESCE(p.amt, 0) as payment_amount
-                FROM orders o
-                LEFT JOIN customer c ON o.customer_id = c.customer_id
-                LEFT JOIN payment p ON o.order_id = p.order_id
-                WHERE 1=1";
-
-            $params = [];
-            $types = "";
+                o.order_id,
+                o.customer_id,
+                o.invoice_no,
+                o.order_date,
+                o.order_status,
+                o.payment_status,
+                o.order_delivery_status,
+                o.tracking_number,
+                o.shipped_date,
+                o.delivered_date,
+                o.delivery_notes,
+                c.customer_name,
+                c.customer_email,
+                c.customer_contact,
+                COALESCE(p.amt, 0) as payment_amount
+            FROM orders o
+            LEFT JOIN customer c ON o.customer_id = c.customer_id
+            LEFT JOIN payment p ON o.order_id = p.order_id
+            WHERE 1=1";
 
             // Add status filter if provided
             if ($status !== null && !empty($status)) {
-                $sql .= " AND o.order_delivery_status = ?";
-                $params[] = $status;
-                $types .= "s";
+                $status = mysqli_real_escape_string($conn, $status);
+                $sql .= " AND o.order_delivery_status = '$status'";
             }
 
             // Add search filter if provided
             if ($search !== null && !empty($search)) {
-                $sql .= " AND (c.customer_name LIKE ? OR c.customer_email LIKE ?)";
-                $searchTerm = "%" . $search . "%";
-                $params[] = $searchTerm;
-                $params[] = $searchTerm;
-                $types .= "ss";
+                $search = mysqli_real_escape_string($conn, $search);
+                $sql .= " AND (c.customer_name LIKE '%$search%' OR c.customer_email LIKE '%$search%')";
             }
 
             // Add ordering and limit
-            $sql .= " ORDER BY o.order_date DESC LIMIT ? OFFSET ?";
-            $params[] = $limit;
-            $params[] = $offset;
-            $types .= "ii";
+            $sql .= " ORDER BY o.order_date DESC LIMIT $limit OFFSET $offset";
 
-            // Prepare statement
-            $stmt = $this->db->prepare($sql);
+            error_log("get_all_orders SQL: " . $sql);
 
-            if (!$stmt) {
-                error_log("Prepare failed in get_all_orders: " . $this->db->error);
+            // Use db_fetch_all which is the standard method in db_connection class
+            $result = $this->db_fetch_all($sql);
+
+            if ($result === false) {
+                error_log("get_all_orders query failed");
                 return false;
             }
 
-            // Bind parameters if any
-            if (!empty($params)) {
-                $stmt->bind_param($types, ...$params);
-            }
+            error_log("get_all_orders returned " . count($result) . " orders");
 
-            // Execute
-            if (!$stmt->execute()) {
-                error_log("Execute failed in get_all_orders: " . $stmt->error);
-                return false;
-            }
-
-            // Get results
-            $result = $stmt->get_result();
-            $orders = [];
-
-            while ($row = $result->fetch_assoc()) {
-                $orders[] = $row;
-            }
-
-            $stmt->close();
-
-            error_log("get_all_orders returned " . count($orders) . " orders");
-
-            return $orders;
+            return $result;
         } catch (Exception $e) {
             error_log("Exception in get_all_orders: " . $e->getMessage());
             return false;
         }
     }
+
     /**
      * Calculate order total from order details
      * @param int $order_id - Order ID
