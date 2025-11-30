@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Admin Dashboard - Main Overview Page
  * Central hub for admin operations
@@ -20,14 +21,15 @@ require_admin();
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - GhanaTunes</title>
-    
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
+
     <style>
         :root {
             --primary-color: #2E86AB;
@@ -35,14 +37,14 @@ require_admin();
             --accent-color: #F18F01;
             --secondary-color: #6c757d;
         }
-        
+
         body {
             background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
             background-attachment: fixed;
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
+
         .admin-header {
             background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
             color: white;
@@ -51,10 +53,20 @@ require_admin();
             box-shadow: 0 0.5rem 1rem rgba(46, 134, 171, 0.3);
         }
 
-        .admin-header .btn-outline-light {
+        /* Make buttons wrap properly */
+        .admin-header .btn-outline-light,
+        .admin-header .btn-light {
             border: 2px solid rgba(255, 255, 255, 0.5);
             color: white;
             transition: all 0.3s ease;
+            padding: 0.5rem 1rem;
+            /* Reduced padding */
+            font-size: 0.9rem;
+            /* Slightly smaller font */
+            white-space: nowrap;
+            /* Prevent text wrapping inside buttons */
+            margin-bottom: 0.5rem;
+            /* Add margin for wrapping */
         }
 
         .admin-header .btn-outline-light:hover {
@@ -81,7 +93,44 @@ require_admin();
             background: rgba(255, 255, 255, 0.9);
             color: var(--primary-hover);
         }
-        
+
+        /* Better responsive layout for buttons */
+        @media (max-width: 1400px) {
+
+            .admin-header .btn-outline-light,
+            .admin-header .btn-light {
+                padding: 0.4rem 0.8rem;
+                /* Even smaller on medium screens */
+                font-size: 0.85rem;
+                margin: 0.25rem;
+            }
+        }
+
+        @media (max-width: 1200px) {
+
+            .admin-header .btn-outline-light,
+            .admin-header .btn-light {
+                padding: 0.4rem 0.7rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 992px) {
+
+            /* Stack buttons vertically on tablets */
+            .admin-header .col-md-6.text-md-end {
+                text-align: center !important;
+                margin-top: 1rem;
+            }
+
+            .admin-header .btn-outline-light,
+            .admin-header .btn-light {
+                display: block;
+                width: 100%;
+                margin: 0.5rem 0;
+            }
+        }
+
         .card {
             border: none;
             border-radius: 1rem;
@@ -90,12 +139,12 @@ require_admin();
             margin-bottom: 2rem;
             transition: all 0.3s ease;
         }
-        
+
         .card:hover {
             transform: translateY(-5px);
             box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.15);
         }
-        
+
         .stats-card {
             background: white;
             border-radius: 1rem;
@@ -105,28 +154,28 @@ require_admin();
             cursor: pointer;
             height: 100%;
         }
-        
+
         .stats-card:hover {
             transform: translateY(-10px);
             box-shadow: 0 1rem 2rem rgba(46, 134, 171, 0.2);
         }
-        
+
         .stats-card .icon {
             font-size: 3rem;
             margin-bottom: 1rem;
         }
-        
+
         .stats-card .number {
             font-size: 2.5rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
         }
-        
+
         .stats-card .label {
             color: var(--secondary-color);
             font-size: 1rem;
         }
-        
+
         .quick-action-card {
             background: white;
             border-radius: 1rem;
@@ -138,19 +187,19 @@ require_admin();
             display: block;
             color: inherit;
         }
-        
+
         .quick-action-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.15);
             text-decoration: none;
             color: inherit;
         }
-        
+
         .quick-action-card .icon {
             font-size: 2.5rem;
             margin-bottom: 1rem;
         }
-        
+
         .welcome-card {
             background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
             color: white;
@@ -160,6 +209,7 @@ require_admin();
         }
     </style>
 </head>
+
 <body>
     <!-- Admin Header -->
     <div class="admin-header">
@@ -382,4 +432,5 @@ require_admin();
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../js/dashboard.js"></script>
 </body>
+
 </html>

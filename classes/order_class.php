@@ -299,34 +299,34 @@ class order_class extends db_connection
             $conn = $this->db_conn();
             $order_id = (int)$order_id;
             $order_status = mysqli_real_escape_string($conn, $order_status);
-            
+
             // Build dynamic SQL
             $updates = ["order_delivery_status = '$order_status'"];
-            
+
             // Set shipped_date when status changes to 'shipped'
             if ($order_status === 'shipped') {
                 $updates[] = "shipped_date = NOW()";
             }
-            
+
             // Set delivered_date when status changes to 'delivered'
             if ($order_status === 'delivered') {
                 $updates[] = "delivered_date = NOW()";
             }
-            
+
             // Add tracking number if provided
             if ($tracking_number !== null) {
                 $tracking_number = mysqli_real_escape_string($conn, $tracking_number);
                 $updates[] = "tracking_number = '$tracking_number'";
             }
-            
+
             // Add notes if provided
             if ($notes !== null) {
                 $notes = mysqli_real_escape_string($conn, $notes);
                 $updates[] = "delivery_notes = '$notes'";
             }
-            
+
             $sql = "UPDATE orders SET " . implode(", ", $updates) . " WHERE order_id = $order_id";
-            
+
             error_log("Updating order: $sql");
 
             return $this->db_write_query($sql);
@@ -365,66 +365,102 @@ class order_class extends db_connection
     }
 
     /**
-     * Get all orders (Admin function) - UPDATED with delivery info
-     * @param int $limit - Limit number of results
-     * @param int $offset - Offset for pagination
-     * @param string|null $status - Filter by delivery status
-     * @param string|null $search - Search by customer name/email
-     * @return array|false - Returns array of orders or false if failed
+     * Get all orders with optional filters (Admin function)
+     * CORRECTED VERSION - Add this method to your order_class.php
+     * 
+     * @param int $limit Maximum number of orders to return
+     * @param int $offset Offset for pagination
+     * @param string|null $status Filter by delivery status
+     * @param string|null $search Search by customer name or email
+     * @return array|false Array of orders or false on failure
      */
     public function get_all_orders($limit = 50, $offset = 0, $status = null, $search = null)
     {
         try {
-            $limit = (int)$limit;
-            $offset = (int)$offset;
-
+            // Base query with JOIN to get customer info and payment amount
             $sql = "SELECT 
-                        o.order_id,
-                        o.customer_id,
-                        o.invoice_no,
-                        o.order_date,
-                        o.order_status,
-                        o.order_delivery_status,
-                        o.payment_status,
-                        o.tracking_number,
-                        o.shipped_date,
-                        o.delivered_date,
-                        c.customer_name,
-                        c.customer_email,
-                        COUNT(DISTINCT od.product_id) as total_items,
-                        SUM(od.qty) as total_quantity,
-                        p.amt as payment_amount,
-                        p.currency as payment_currency,
-                        p.payment_method
-                    FROM orders o
-                    INNER JOIN customer c ON o.customer_id = c.customer_id
-                    LEFT JOIN orderdetails od ON o.order_id = od.order_id
-                    LEFT JOIN payment p ON o.order_id = p.order_id
-                    WHERE 1=1";
-            
-            // Add status filter if provided
-            if ($status) {
-                $status = mysqli_real_escape_string($this->db_conn(), $status);
-                $sql .= " AND o.order_delivery_status = '$status'";
-            }
-            
-            // Add search filter if provided
-            if ($search) {
-                $search = mysqli_real_escape_string($this->db_conn(), $search);
-                $sql .= " AND (c.customer_name LIKE '%$search%' OR c.customer_email LIKE '%$search%')";
-            }
-            
-            $sql .= " GROUP BY o.order_id
-                    ORDER BY o.order_date DESC, o.order_id DESC
-                    LIMIT $limit OFFSET $offset";
+                    o.order_id,
+                    o.customer_id,
+                    o.invoice_no,
+                    o.order_date,
+                    o.order_status,
+                    o.payment_status,
+                    o.order_delivery_status,
+                    o.tracking_number,
+                    o.shipped_date,
+                    o.delivered_date,
+                    o.delivery_notes,
+                    c.customer_name,
+                    c.customer_email,
+                    c.customer_contact,
+                    COALESCE(p.amt, 0) as payment_amount
+                FROM orders o
+                LEFT JOIN customer c ON o.customer_id = c.customer_id
+                LEFT JOIN payment p ON o.order_id = p.order_id
+                WHERE 1=1";
 
-            return $this->db_fetch_all($sql);
+            $params = [];
+            $types = "";
+
+            // Add status filter if provided
+            if ($status !== null && !empty($status)) {
+                $sql .= " AND o.order_delivery_status = ?";
+                $params[] = $status;
+                $types .= "s";
+            }
+
+            // Add search filter if provided
+            if ($search !== null && !empty($search)) {
+                $sql .= " AND (c.customer_name LIKE ? OR c.customer_email LIKE ?)";
+                $searchTerm = "%" . $search . "%";
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+                $types .= "ss";
+            }
+
+            // Add ordering and limit
+            $sql .= " ORDER BY o.order_date DESC LIMIT ? OFFSET ?";
+            $params[] = $limit;
+            $params[] = $offset;
+            $types .= "ii";
+
+            // Prepare statement
+            $stmt = $this->db->prepare($sql);
+
+            if (!$stmt) {
+                error_log("Prepare failed in get_all_orders: " . $this->db->error);
+                return false;
+            }
+
+            // Bind parameters if any
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+
+            // Execute
+            if (!$stmt->execute()) {
+                error_log("Execute failed in get_all_orders: " . $stmt->error);
+                return false;
+            }
+
+            // Get results
+            $result = $stmt->get_result();
+            $orders = [];
+
+            while ($row = $result->fetch_assoc()) {
+                $orders[] = $row;
+            }
+
+            $stmt->close();
+
+            error_log("get_all_orders returned " . count($orders) . " orders");
+
+            return $orders;
         } catch (Exception $e) {
-            error_log("Error getting all orders: " . $e->getMessage());
+            error_log("Exception in get_all_orders: " . $e->getMessage());
             return false;
         }
     }
-
     /**
      * Calculate order total from order details
      * @param int $order_id - Order ID
@@ -509,7 +545,7 @@ class order_class extends db_connection
                         SUM(CASE WHEN order_delivery_status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_orders,
                         SUM(CASE WHEN DATE(order_date) = CURDATE() THEN 1 ELSE 0 END) as today_orders
                     FROM orders";
-            
+
             return $this->db_fetch_one($sql);
         } catch (Exception $e) {
             error_log("Error getting order stats: " . $e->getMessage());
@@ -517,4 +553,3 @@ class order_class extends db_connection
         }
     }
 }
-?>
